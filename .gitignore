@@ -1,0 +1,16 @@
+# Claude Code: per-machine permission approvals
+.claude/settings.local.json
+
+# Secrets (see CLAUDE.md security rules)
+.env
+.env.*
+
+# OS / editor clutter
+Thumbs.db
+Desktop.ini
+.DS_Store
+.vscode/
+
+# Dependencies
+node_modules/
+__pycache__/

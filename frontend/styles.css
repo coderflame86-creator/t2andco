@@ -883,10 +883,9 @@ a, button, summary, label { touch-action: manipulation; }
     background-size: 12px;
   }
 
-  /* Hero split */
-  .hero-inner { grid-template-columns: 1fr 1fr; text-align: left; }
-  .hero-copy { margin-inline: 0; }
-  .hero-sub { margin-left: 0; }
+  /* Hero: centred copy with a wide banner image below */
+  .hero-copy { max-width: 48rem; }
+  .hero-art img { aspect-ratio: 2 / 1; object-position: 50% 100%; }
 
   .contact-grid { grid-template-columns: 1.5fr 1fr; gap: var(--space-7); }
 }

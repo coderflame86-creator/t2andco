@@ -61,8 +61,10 @@ Rule: aqua mist and platinum are never used for text on white.
 
 ## Hero
 
-- Right column holds the product photo `assets/images/hero-products.jpg` (16:9, 2000×1125). It fills the column's full width, with 20px radius and `--shadow-lg`. It loads with `fetchpriority="high"` and is never lazy-loaded.
-- Desktop: copy and image split 50/50. Mobile: the image sits full-width below the CTA.
+- Single column on all screen sizes: centred eyebrow, headline and subheading, with the product photo `assets/images/hero-products.jpg` (2000×1125) as a wide banner directly below the subheading. No hero button.
+- The image spans the full container width, with 20px radius and `--shadow-lg`. It loads with `fetchpriority="high"` and is never lazy-loaded.
+- Aspect: 16:9 on mobile. 2:1 from 960px, anchored to the bottom (`object-position: 50% 100%`) so only empty backdrop at the top is cropped and no product is cut.
+- Never put the image beside the text (owner's request).
 - Everything is disabled under `prefers-reduced-motion`.
 
 ## Breakpoints (mobile-first)

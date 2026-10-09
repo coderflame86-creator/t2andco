@@ -57,9 +57,21 @@
           <p class="eyebrow">Authentic &middot; Imported from Japan</p>
           <h1>Bringing the best of Japan to everyone ready to begin</h1>
           <p class="hero-sub">Authentic J-Beauty skincare, pure Pink Himalayan salt and quality Japanese cars, carefully chosen and brought to your door.</p>        </div>
-        <div class="hero-art">
-          <img src="assets/images/hero-products.jpg" alt="Japanese skincare serums, lotion and gel displayed on ice cubes" width="2000" height="1125" fetchpriority="high">
-        </div>
+        <!-- CSS-only slideshow: 5 slides, 5 seconds each. Pauses on hover, focus or the pause button. -->
+        <section class="hero-art hero-slider" aria-roledescription="carousel" aria-label="Night-time skincare routine">
+          <input type="checkbox" id="slider-pause" class="slider-pause" aria-label="Pause slideshow">
+          <label for="slider-pause" class="slider-pause-btn" aria-hidden="true"></label>
+          <div class="slides">
+            <img class="slide" src="assets/images/hero-products.jpg" alt="Japanese skincare serums, lotion and gel displayed on ice cubes" width="2000" height="1125" fetchpriority="high">
+            <img class="slide" src="assets/images/hero-night-1.webp" alt="Night 1. Step 1: wash your face with your favourite face wash. Step 2: use Pure Retinol. Step 3: use your favourite moisturizer after using Retinol." width="2000" height="1017" loading="lazy">
+            <img class="slide" src="assets/images/hero-night-2.webp" alt="Night 2. Step 1: wash your face with your favourite face wash. Step 2: use The Stem Cell. Step 3: use your favourite moisturizer after using The Stem Cell." width="2000" height="1017" loading="lazy">
+            <img class="slide" src="assets/images/hero-night-3.webp" alt="Night 3. Step 1: wash your face with your favourite face wash. Step 2: use Exosomes. Step 3: use your favourite moisturizer after using Exosomes." width="2000" height="1017" loading="lazy">
+            <img class="slide" src="assets/images/hero-repeat.webp" alt="Repeat the three-night routine." width="2000" height="1017" loading="lazy">
+          </div>
+          <div class="slider-dots" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+        </section>
       </div>
     </section>
 

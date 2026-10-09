@@ -57,14 +57,16 @@ Rule: aqua mist and platinum are never used for text on white.
 ## Motion
 
 - Tokens: fast 150ms, base 250ms, slow 600ms; easing `cubic-bezier(.22,1,.36,1)`.
-- Only transform/opacity animate. The only animations are the collection cards fading up on load and hover/press feedback. The scrolling marquee was removed at the owner's request; don't re-add it.
+- Only transform/opacity animate. The only animations are the hero slideshow (see Hero), the collection cards fading up on load, and hover/press feedback. The scrolling marquee was removed at the owner's request; don't re-add it.
 
 ## Hero
 
-- Single column on all screen sizes: centred eyebrow, headline and subheading, with the product photo `assets/images/hero-products.jpg` (2000×1125) as a wide banner directly below the subheading. No hero button.
-- The image spans the full container width, with 20px radius and `--shadow-lg`. It loads with `fetchpriority="high"` and is never lazy-loaded.
-- Aspect: 16:9 on mobile. 2:1 from 960px, anchored to the bottom (`object-position: 50% 100%`) so only empty backdrop at the top is cropped and no product is cut.
-- Never put the image beside the text (owner's request).
+- Single column on all screen sizes: centred eyebrow, headline and subheading, with a wide slideshow banner directly below the subheading. No hero button. Never put the image beside the text (owner's request).
+- **Slideshow** (CSS only, no JS), in this order: `hero-products.jpg` → `hero-night-1.webp` → `hero-night-2.webp` → `hero-night-3.webp` → `hero-repeat.webp`, then loop. Each slide shows for 5s with a 1s crossfade (25s cycle).
+- Frame aspect is `2000 / 1017` (the routine slides' exact shape) on every screen size, so their edge text ("Step 1" / "Step 3") is never cropped. The product photo is bottom-anchored, so only empty backdrop is trimmed.
+- Full container width, 20px radius, `--shadow-lg`. The first slide loads with `fetchpriority="high"`; the others are lazy-loaded.
+- **Pause:** on hover, on keyboard focus, and via the 44px round pause/play button (top-right, a checkbox labelled "Pause slideshow"). Dots below show the current slide. Under reduced motion only the first slide shows, and the button and dots are hidden.
+- The routine slides have their text baked into the image, so each `alt` repeats the full text. Keep it in sync if the images change.
 - Everything is disabled under `prefers-reduced-motion`.
 
 ## Breakpoints (mobile-first)

@@ -50,7 +50,8 @@ Rule: aqua mist and platinum are never used for text on white.
 - **Cards:** white, 1px platinum border, 20px radius. Hover (pointer devices only) lifts 4px with `--shadow-lg`.
 - **Navigation:** sticky white header. Desktop (≥960px): dropdowns open on hover and keyboard focus, active item gets a maroon underline, parent highlights via `:has()`. Mobile: CSS-only drawer with 48px rows; sub-menus shown indented.
 - **Breadcrumbs:** on all product pages (3-level hierarchy).
-- **Category chips:** on J-Beauty pages to switch between the 5 categories; current chip filled maroon.
+- **Category chips:** on J-Beauty pages to switch between the 3 categories (Anti-aging → Hydration → Brightening); current chip filled maroon.
+- **Product cards with real data:** name, PKR price, an optional italic tagline, "What it does" benefit list, and "Select actives" in a collapsible `<details>`. Grids with only 1–2 products cap cards at 300px and centre them.
 - **Forms:** visible labels, maroon asterisk on required fields, hint text via `aria-describedby`, 48px inputs, error text shown with `:user-invalid` (no JS), native validation kept.
 - **FAQ:** native `<details>`, plus icon rotates to ×, open item gets maroon border.
 

@@ -34,7 +34,8 @@ prompts/    AI prompts for product copy and content
 - Use plain HTML, CSS and JavaScript. Do not add frameworks or dependencies unless asked. Google Fonts is the only approved external resource.
 - Use semantic HTML, a mobile-first responsive layout, and accessible markup (alt text, labels, contrast).
 - Use the design tokens (CSS variables) at the top of `styles.css`. Never hardcode hex colours in components.
-- Shared header/footer markup is copied in all 10 pages. When you change it, change every page.
+- Shared header/footer markup is copied in all 8 pages. When you change it, change every page.
+- J-Beauty categories, in this order: Anti-aging & Collagen, Hydration & Skin Firming, Brightening. Masks and Eye Cream & Blackheads were removed.
 - Keep functions small, use clear names, and write few comments.
 - Keep product content in `data/`, not hardcoded in HTML or JS.
 - Match the style of the code around your change.

@@ -54,6 +54,7 @@ Rule: aqua mist and platinum are never used for text on white.
 - **Product cards with real data:** name, PKR price, an optional italic tagline, "What it does" benefit list, and "Select actives" in a collapsible `<details>`. Grids with only 1–2 products cap cards at 300px and centre them.
 - **Forms:** visible labels, maroon asterisk on required fields, hint text via `aria-describedby`, 48px inputs, error text shown with `:user-invalid` (no JS), native validation kept.
 - **FAQ:** native `<details>`, plus icon rotates to ×, open item gets maroon border.
+- **Chat widget** (`app.js`, loaded with `defer` on every page; the script builds the markup): 56px maroon round button fixed bottom-right (safe-area aware, `--z-chat` 200). It opens a 360×520 window that slides up from the button: maroon header with title and close button, soft-aqua message area (`role="log"`, `aria-live="polite"`), and a pill input with a round send button. On phones under 640px it becomes a full-width bottom sheet (85dvh) and the button hides while open. Customer bubbles are maroon on the right; bot bubbles are white on the left. A typing indicator shows before the reply. Messages are set with `textContent` only. Escape closes it and returns focus to the button. Currently a mock: the fixed reply comes from `BOT_REPLY`, with no network calls.
 
 ## Motion
 

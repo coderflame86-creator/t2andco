@@ -65,6 +65,7 @@
   /* Layers */
   --z-header: 100;
   --z-dropdown: 110;
+  --z-chat: 200;
   --z-skip: 1000;
 
   /* Motion */
@@ -514,6 +515,20 @@ a, button, summary, label { touch-action: manipulation; }
 }
 .audience-card p { margin: 0; color: var(--color-text-muted); }
 
+.audience-video,
+.audience-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  margin-top: var(--space-5);
+  border-radius: var(--radius-md);
+  background: var(--platinum);
+  object-fit: cover;
+}
+/* Wide photos keep their own shape so logos and edges aren't cropped */
+.audience-image--wide { aspect-ratio: auto; }
+
 .audience-num {
   display: block;
   margin-bottom: var(--space-4);
@@ -703,6 +718,32 @@ a, button, summary, label { touch-action: manipulation; }
   transition: transform var(--dur-slow) var(--ease-out);
 }
 .product-grid--wide .product-card img { aspect-ratio: 4 / 3; }
+.product-grid--landscape {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 520px));
+  justify-content: center;
+}
+.product-grid--landscape .product-card img { aspect-ratio: 16 / 9; }
+
+/* Spec table, e.g. salt purity */
+.spec-list {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  margin: 0;
+  font-size: var(--text-sm);
+}
+.spec-list dt,
+.spec-list dd {
+  margin: 0;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.spec-list dt { color: var(--color-text-muted); }
+.spec-list dd {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text);
+  text-align: right;
+}
 
 .product-body {
   display: flex;
@@ -919,6 +960,200 @@ a, button, summary, label { touch-action: manipulation; }
   font-size: var(--text-sm);
 }
 .footer-bottom p { margin: 0; }
+/* Phones: keep the last footer line clear of the floating chat button */
+@media (max-width: 639px) {
+  .footer-bottom { padding-bottom: calc(56px + 2 * var(--space-4)); }
+}
+
+/* ============ Chat widget (built by app.js) ============ */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.chat-widget {
+  position: fixed;
+  right: max(var(--space-4), env(safe-area-inset-right));
+  bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  z-index: var(--z-chat);
+}
+
+.chat-toggle,
+.chat-send,
+.chat-close {
+  display: grid;
+  place-items: center;
+  border: 0;
+  cursor: pointer;
+  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out);
+}
+
+.chat-toggle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  /* White ring keeps the button visible over the maroon footer and CTA band */
+  box-shadow: 0 0 0 3px var(--white), 0 10px 28px rgba(122, 28, 46, 0.35);
+}
+.chat-toggle:hover { background: var(--color-primary-hover); }
+.chat-toggle:active { transform: scale(0.95); }
+.chat-toggle svg { width: 26px; height: 26px; fill: currentColor; }
+
+.chat-panel {
+  position: absolute;
+  right: 0;
+  bottom: calc(56px + var(--space-3));
+  display: flex;
+  flex-direction: column;
+  width: min(360px, calc(100vw - 2 * var(--space-4)));
+  /* Never taller than the space between the sticky header and the chat button */
+  height: min(520px, calc(100dvh - var(--header-h) - 56px - 2 * var(--space-4) - var(--space-3)));
+  overflow: hidden;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  animation: chat-in var(--dur-base) var(--ease-out);
+  transform-origin: bottom right;
+}
+.chat-panel[hidden] { display: none; }
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.chat-title { margin: 0; font-size: var(--text-md); color: var(--color-on-primary); }
+.chat-status { margin: 0; font-size: var(--text-xs); color: rgba(255, 255, 255, 0.8); }
+
+.chat-close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-on-primary);
+}
+.chat-close:hover { background: rgba(255, 255, 255, 0.15); }
+.chat-close svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.chat-header :focus-visible { outline-color: var(--white); }
+
+.chat-messages {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--color-surface-alt);
+}
+
+.chat-empty {
+  margin: auto;
+  max-width: 16rem;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.chat-bubble {
+  max-width: 80%;
+  margin: 0;
+  padding: var(--space-2) 0.875rem;
+  border-radius: 16px;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  animation: bubble-in var(--dur-base) var(--ease-out);
+}
+.chat-bubble--user {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+  border-bottom-right-radius: 4px;
+}
+.chat-bubble--bot {
+  align-self: flex-start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-typing { display: flex; gap: 4px; padding-block: 0.875rem; }
+.chat-typing span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-border-strong);
+  animation: typing 1s ease-in-out infinite;
+}
+.chat-typing span:nth-child(2) { animation-delay: 150ms; }
+.chat-typing span:nth-child(3) { animation-delay: 300ms; }
+
+.chat-form {
+  display: flex;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+.chat-input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 var(--space-4);
+  font: inherit;
+  font-size: var(--text-base);
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-pill);
+}
+.chat-input:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 1px; border-color: var(--color-primary); }
+
+.chat-send {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+.chat-send:hover { background: var(--color-primary-hover); }
+.chat-send:active { transform: scale(0.95); }
+.chat-send svg { width: 20px; height: 20px; fill: currentColor; }
+
+/* Hide the chat while the phone menu is open, so it never covers menu items */
+body:has(#nav-toggle:checked) .chat-widget { display: none; }
+
+/* Phones (portrait or short landscape): the window becomes a bottom sheet below the header */
+@media (max-width: 639px), (max-height: 500px) {
+  .chat-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: min(85dvh, calc(100dvh - var(--header-h)));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    border-bottom: 0;
+    transform-origin: bottom center;
+  }
+  .chat-form { padding-bottom: max(var(--space-3), env(safe-area-inset-bottom)); }
+  .chat-open .chat-toggle { display: none; }
+}
 
 /* ============ Hover effects (pointer devices only) ============ */
 @media (hover: hover) {
@@ -1055,7 +1290,8 @@ a, button, summary, label { touch-action: manipulation; }
 }
 
 @media (min-width: 1024px) {
-  .audience-grid { grid-template-columns: repeat(4, 1fr); }
+  /* One equal column per card, so hiding or restoring a card keeps the row full */
+  .audience-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 1fr; }
   .footer-grid { grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: var(--space-7); }
 }
 
@@ -1075,6 +1311,18 @@ a, button, summary, label { touch-action: manipulation; }
 @keyframes fade-up {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
+}
+@keyframes chat-in {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes bubble-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes typing {
+  0%, 60%, 100% { opacity: 0.35; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-3px); }
 }
 @keyframes menu-in {
   from { opacity: 0; transform: translateY(-8px); }

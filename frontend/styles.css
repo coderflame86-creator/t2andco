@@ -560,6 +560,7 @@ a, button, summary, label { touch-action: manipulation; }
   margin: 0;
   font: italic 400 var(--text-md) / 1.65 var(--font-display);
 }
+.testimonial blockquote p + p { margin-top: var(--space-3); }
 
 .testimonial figcaption {
   margin-top: var(--space-5);

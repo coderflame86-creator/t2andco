@@ -4,6 +4,10 @@
 # Secrets (see CLAUDE.md security rules)
 .env
 .env.*
+!.env.example
+
+# Customer orders (personal data, never commit)
+data/orders.json
 
 # OS / editor clutter
 Thumbs.db

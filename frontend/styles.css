@@ -1114,6 +1114,7 @@ a, button, summary, label { touch-action: manipulation; }
 }
 .chat-bubble--bot {
   align-self: flex-start;
+  white-space: pre-line;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   color: var(--color-text);

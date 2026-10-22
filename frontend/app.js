@@ -1,10 +1,13 @@
-// T2&Co chat widget (mock). No network calls: the bot always gives a fixed reply.
+// T2&Co chat widget: sends messages to the backend at /api/chat and shows the bot's replies.
 (function () {
   "use strict";
 
-  const BOT_REPLY = "Hi, I am a T2&Co Bot. My brain is not connected yet.";
-  const REPLY_DELAY_MS = 700;
+  const CHAT_URL = "/api/chat";
   const MAX_LENGTH = 500;
+  const HISTORY_TURNS = 10;
+  const REQUEST_TIMEOUT_MS = 60000;
+  const ERROR_REPLY =
+    "Sorry, I can't connect right now. Please check your internet and try again, or reach us through the Contact page.";
 
   const ICON_CHAT =
     '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.2 3.6c-.6.5-1.5.1-1.5-.7V16h-.3A2.5 2.5 0 0 1 4 13.5z"/></svg>';
@@ -98,6 +101,27 @@
     return typing;
   }
 
+  // Returns the bot's reply text, or null if the server couldn't be reached or gave no reply.
+  async function fetchReply(message, history) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    try {
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, conversationHistory: history.slice(-HISTORY_TURNS) }),
+        signal: controller.signal,
+      });
+      const data = await response.json().catch(() => ({}));
+      const reply = typeof data.reply === "string" ? data.reply.trim() : "";
+      return { reply: reply || null, ok: response.ok && reply !== "" };
+    } catch {
+      return { reply: null, ok: false };
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
   // Respect reduced motion: don't autoplay videos (controls stay available)
   function pauseAutoplayIfReducedMotion() {
     if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -131,17 +155,32 @@
       }
     });
 
-    ui.form.addEventListener("submit", (event) => {
+    const history = [];
+    let waiting = false;
+
+    function setWaiting(isWaiting) {
+      waiting = isWaiting;
+      ui.form.setAttribute("aria-busy", String(isWaiting));
+      ui.form.querySelector(".chat-send").disabled = isWaiting;
+    }
+
+    ui.form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const text = ui.input.value.trim().slice(0, MAX_LENGTH);
-      if (!text) return;
+      if (!text || waiting) return;
       addBubble(ui, text, "user");
       ui.input.value = "";
+      setWaiting(true);
       const typing = showTyping(ui);
-      setTimeout(() => {
-        typing.remove();
-        addBubble(ui, BOT_REPLY, "bot");
-      }, REPLY_DELAY_MS);
+
+      const { reply, ok } = await fetchReply(text, history);
+
+      typing.remove();
+      addBubble(ui, reply || ERROR_REPLY, "bot");
+      // Only real exchanges go into history, so error messages never reach the bot.
+      if (ok) history.push({ role: "user", content: text }, { role: "assistant", content: reply });
+      setWaiting(false);
+      ui.input.focus();
     });
   }
 

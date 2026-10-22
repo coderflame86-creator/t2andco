@@ -6,6 +6,15 @@
     { "id": "hydration-firming", "name": "Hydration & Skin Firming" },
     { "id": "brightening", "name": "Brightening" }
   ],
+  "skinTypes": [
+    { "id": "aging", "label": "Wrinkles or ageing skin" },
+    { "id": "dehydrated", "label": "Dry or dehydrated skin" },
+    { "id": "pigmented", "label": "Dark spots or pigmentation" },
+    { "id": "oily", "label": "Oily skin" },
+    { "id": "combination", "label": "Combination skin" },
+    { "id": "sensitive", "label": "Sensitive skin" },
+    { "id": "normal", "label": "Normal skin" }
+  ],
   "items": [
     {
       "id": "aa-retinol",

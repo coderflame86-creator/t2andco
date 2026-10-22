@@ -102,21 +102,22 @@
   }
 
   // Returns the bot's reply text, or null if the server couldn't be reached or gave no reply.
-  async function fetchReply(message, history) {
+  async function fetchReply(message, history, sessionId) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
     try {
       const response = await fetch(CHAT_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message, conversationHistory: history.slice(-HISTORY_TURNS) }),
+        body: JSON.stringify({ message, conversationHistory: history.slice(-HISTORY_TURNS), sessionId }),
         signal: controller.signal,
       });
       const data = await response.json().catch(() => ({}));
       const reply = typeof data.reply === "string" ? data.reply.trim() : "";
-      return { reply: reply || null, ok: response.ok && reply !== "" };
+      const newSessionId = typeof data.sessionId === "string" ? data.sessionId : sessionId;
+      return { reply: reply || null, ok: response.ok && reply !== "", sessionId: newSessionId };
     } catch {
-      return { reply: null, ok: false };
+      return { reply: null, ok: false, sessionId };
     } finally {
       clearTimeout(timer);
     }
@@ -156,6 +157,7 @@
     });
 
     const history = [];
+    let sessionId; // set by the server; keeps this chat's order between messages
     let waiting = false;
 
     function setWaiting(isWaiting) {
@@ -173,7 +175,9 @@
       setWaiting(true);
       const typing = showTyping(ui);
 
-      const { reply, ok } = await fetchReply(text, history);
+      const result = await fetchReply(text, history, sessionId);
+      const { reply, ok } = result;
+      sessionId = result.sessionId;
 
       typing.remove();
       addBubble(ui, reply || ERROR_REPLY, "bot");

@@ -25,7 +25,7 @@
       "description": "Retinol, Exosomes, PDRN and NMN work together to renew tired skin, support collagen for firmer skin and bring back a luminous glow.",
       "benefits": ["Regeneration", "Firmness", "Radiance"],
       "price": 6500,
-      "options": [{ "id": "standard", "label": "Standard", "size": null, "price": 6500 }],
+      "options": [{ "id": "standard", "label": "Standard", "size": "60 ml", "price": 6500 }],
       "activeIngredients": [
         "Retinol",
         "Human Adipose-Derived Mesenchymal Cell Exosomes",
@@ -47,7 +47,7 @@
       "description": "Exosomes act like little packages that signal the skin to make more collagen. Supports repair, firmness and the look of fine lines, leaving skin plump and bright.",
       "benefits": ["Cellular Repair", "Anti-Aging", "Glow & Hydration"],
       "price": 7000,
-      "options": [{ "id": "standard", "label": "Standard", "size": null, "price": 7000 }],
+      "options": [{ "id": "standard", "label": "Standard", "size": "60 ml", "price": 7000 }],
       "activeIngredients": [
         "Human Adipose-Derived Mesenchymal Cell Exosomes",
         "Sodium DNA (PDRN)",
@@ -89,7 +89,7 @@
       "description": "An 8-peptide blend that blocks the enzymes that break down collagen, targeting fine lines while collagen and hyaluronic acid keep skin plump and smooth.",
       "benefits": ["Cellular Renewal", "Anti-Aging", "Deep Hydration"],
       "price": 7000,
-      "options": [{ "id": "standard", "label": "Standard", "size": null, "price": 7000 }],
+      "options": [{ "id": "standard", "label": "Standard", "size": "60 ml", "price": 7000 }],
       "activeIngredients": [
         "8-Peptide Complex",
         "Adipose Stromal Cell Conditioned Media Extract",
@@ -109,7 +109,7 @@
       "description": "Micro-needle-like spicules open tiny channels so skincare sinks in deeper, helping repair collagen, refine rough texture and smooth the skin.",
       "benefits": ["Better Absorption", "Texture & Pores", "Calming & Repair"],
       "price": 4500,
-      "options": [{ "id": "standard", "label": "Standard", "size": null, "price": 4500 }],
+      "options": [{ "id": "standard", "label": "Standard", "size": "1.5 ml*6", "price": 4500 }],
       "activeIngredients": [
         "Cica Reedle (Centella Asiatica Extract, Madecassoside, Asiaticoside, Madecassic Acid, Asiatic Acid)",
         "Niacinamide (Vitamin B3)",
@@ -130,7 +130,7 @@
       "description": "Glutathione and PDRN deeply hydrate and repair the skin barrier, brighten dullness and help target fine wrinkles for a plump, smooth, radiant complexion.",
       "benefits": ["Brightening & Tone Correction", "Deep Hydration", "Anti-Aging & Cellular Recovery"],
       "price": 6500,
-      "options": [{ "id": "standard", "label": "Standard", "size": null, "price": 6500 }],
+      "options": [{ "id": "standard", "label": "Standard", "size": "55 ml", "price": 6500 }],
       "activeIngredients": [
         "Glutathione",
         "Nicotinamide Mononucleotide (NMN)",
@@ -150,7 +150,7 @@
       "description": "The all-in-one cream for face, hands and body. Centella soothes dry, irritated skin while niacinamide and shea butter strengthen and protect. Cica care for the whole family.",
       "benefits": ["All-Over Moisture", "Calming", "Barrier Strength"],
       "price": 1500,
-      "options": [{ "id": "standard", "label": "Standard", "size": null, "price": 1500 }],
+      "options": [{ "id": "standard", "label": "Standard", "size": "50 g", "price": 1500 }],
       "activeIngredients": [
         "Centella Asiatica (Cica) Extract",
         "Niacinamide (Vitamin B3)",
@@ -169,7 +169,7 @@
       "description": "A cult Japanese lotion. Tranexamic acid helps reduce the look of dark spots and melasma, four types of hyaluronic acid flood the skin with moisture, and licorice root helps prevent rough skin.",
       "benefits": ["Brightening", "Super Hydration", "Smooth Skin"],
       "price": 5000,
-      "options": [{ "id": "standard", "label": "Standard", "size": null, "price": 5000 }],
+      "options": [{ "id": "standard", "label": "Standard", "size": "175 ml", "price": 5000 }],
       "activeIngredients": [
         "Tranexamic Acid",
         "Dipotassium Glycyrrhizate",

@@ -1,13 +1,17 @@
 // Order state for one chat session. Prices and totals always come from data/menu.json, never from the bot.
-// For now the bot can add, change and remove items. Checkout comes later.
+// Checkout: confirm the total -> customer details -> payment receipt (uploaded in chat) -> submitted.
+
+import { randomBytes } from "node:crypto";
 
 const MAX_QUANTITY = 20;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function createOrder(currency) {
   return {
+    orderId: null,
     items: [],
     orderType: "delivery",
-    customer: { name: null, email: null, whatsapp: null },
+    customer: { name: null, email: null, whatsapp: null, address: null, city: null },
     promotion: null,
     currency,
     subtotal: 0,
@@ -15,14 +19,31 @@ export function createOrder(currency) {
     total: 0,
     confirmed: false,
     confirmedAt: null,
+    receiptFile: null,
+    receiptHash: null,
+    source: null, // "chat" or "website", set when submitted
+    customerId: null,
+    customerOrderNumber: null,
+    possibleDuplicateOf: null,
+    submittedAt: null,
     status: "browsing",
   };
+}
+
+const SUBMISSION_FIELDS = ["orderId", "receiptFile", "receiptHash", "source", "customerId", "customerOrderNumber", "possibleDuplicateOf", "submittedAt"];
+
+function hasCustomerDetails(order) {
+  return Object.values(order.customer).every(Boolean);
 }
 
 function refresh(order) {
   order.subtotal = order.items.reduce((sum, item) => sum + item.lineTotal, 0);
   order.total = order.subtotal - order.discount;
-  order.status = order.items.length === 0 ? "browsing" : "draft";
+  if (order.submittedAt) order.status = "submitted";
+  else if (order.items.length === 0) order.status = "browsing";
+  else if (!order.confirmed) order.status = "draft";
+  else if (!hasCustomerDetails(order)) order.status = "awaiting_details";
+  else order.status = "awaiting_payment";
   return order;
 }
 
@@ -159,6 +180,67 @@ export function removeItem(order, { productId, optionId, quantity }) {
   return { ok: true, removed: { name: line.name, option: line.optionLabel, quantity: removed }, order: refresh(order) };
 }
 
+// The customer must agree to the exact total the server worked out.
+export function confirmOrder(order, { customerConfirmedTotal }) {
+  if (order.items.length === 0) return fail(order, "The order is empty.");
+  if (customerConfirmedTotal !== order.total) {
+    return fail(
+      order,
+      `The total is ${money(order.total, order.currency)}. Repeat the order and this total to the customer and ask again.`,
+    );
+  }
+  order.confirmed = true;
+  order.confirmedAt = new Date().toISOString();
+  return { ok: true, order: refresh(order) };
+}
+
+function cleanText(value, maxLength) {
+  return typeof value === "string" && value.trim() ? value.trim().replace(/\s+/g, " ").slice(0, maxLength) : null;
+}
+
+// Saves the valid details and reports the rest. Only allowed once the order is confirmed.
+export function saveCustomerDetails(order, details) {
+  if (!order.confirmed) return fail(order, "Confirm the order and total with the customer before taking their details.");
+  const errors = [];
+  const save = (field, value, error) => {
+    if (value) order.customer[field] = value;
+    else errors.push(error);
+  };
+  if (details.name !== undefined) save("name", cleanText(details.name, 100), "Name must not be empty.");
+  if (details.email !== undefined) {
+    const email = cleanText(details.email, 254)?.toLowerCase();
+    save("email", email && EMAIL_PATTERN.test(email) ? email : null, "That email address does not look valid.");
+  }
+  if (details.whatsapp !== undefined) {
+    const digits = String(details.whatsapp).replace(/[\s()+-]/g, "");
+    save("whatsapp", /^\d{10,15}$/.test(digits) ? digits : null, "WhatsApp number must be 10 to 15 digits.");
+  }
+  if (details.address !== undefined) save("address", cleanText(details.address, 300), "Address must not be empty.");
+  if (details.city !== undefined) save("city", cleanText(details.city, 100), "City must not be empty.");
+
+  refresh(order);
+  const missing = Object.keys(order.customer).filter((field) => !order.customer[field]);
+  return { ok: errors.length === 0, ...(errors.length ? { error: errors.join(" ") } : {}), missing, order };
+}
+
+export function newOrderId() {
+  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  return `T2-${date}-${randomBytes(3).toString("hex").toUpperCase()}`;
+}
+
+// Called by the server (not the bot) once the payment receipt is saved.
+// submission: orderId, receiptFile, receiptHash, source, customerId, customerOrderNumber, possibleDuplicateOf.
+export function submitOrder(order, submission) {
+  Object.assign(order, submission, { submittedAt: new Date().toISOString() });
+  return refresh(order);
+}
+
+// Undoes submitOrder if the order could not be saved, so the customer can try again.
+export function unsubmitOrder(order) {
+  for (const field of SUBMISSION_FIELDS) order[field] = null;
+  return refresh(order);
+}
+
 export const ORDER_TOOLS = [
   {
     name: "add_to_order",
@@ -207,19 +289,53 @@ export const ORDER_TOOLS = [
       additionalProperties: false,
     },
   },
+  {
+    name: "confirm_order",
+    description:
+      "Mark the order as confirmed. Call it only after you showed the customer the full order summary and total and they explicitly said yes. Pass the total they agreed to.",
+    input_schema: {
+      type: "object",
+      properties: { customerConfirmedTotal: { type: "number", description: "The total the customer agreed to." } },
+      required: ["customerConfirmedTotal"],
+      additionalProperties: false,
+    },
+  },
+  {
+    name: "save_customer_details",
+    description:
+      "Save the customer's delivery details after the order is confirmed. Send whichever details the customer has given; call again for the rest. The result lists any details still missing.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Full name." },
+        email: { type: "string" },
+        whatsapp: { type: "string", description: "Active WhatsApp number." },
+        address: { type: "string", description: "Full delivery address (house, street, area)." },
+        city: { type: "string" },
+      },
+      additionalProperties: false,
+    },
+  },
 ];
+
+const ITEM_TOOLS = ["add_to_order", "update_order_item", "remove_from_order"];
+
+function itemsSignature(order) {
+  return JSON.stringify(order.items.map((i) => [i.productId, i.optionId, i.quantity]));
+}
 
 function money(amount, currency) {
   return `${currency} ${amount.toLocaleString("en-US")}`;
 }
 
-// Short plain-text order summary for the customer. Options are shown only when a product has a choice.
+// Short plain-text order summary for the customer. Shows the option when a product has a choice, else its size.
 export function summarizeOrder(order, menu) {
   if (order.items.length === 0) return "Your order is empty.";
   const lines = order.items.map((item) => {
     const product = menu.items.find((p) => p.id === item.productId);
     const details = [];
     if (product && product.options.length > 1) details.push(item.optionLabel);
+    else if (item.size) details.push(item.size);
     if (item.skinType) {
       details.push(`for ${menu.skinTypes.find((s) => s.id === item.skinType)?.label ?? item.skinType}`);
     }
@@ -229,9 +345,28 @@ export function summarizeOrder(order, menu) {
   return [...lines, `Total: ${money(order.total, order.currency)}`].join("\n");
 }
 
-export function runOrderTool(order, name, input, menu) {
+function runItemTool(order, name, input, menu) {
   if (name === "add_to_order") return addItem(order, input, menu);
   if (name === "update_order_item") return updateItem(order, input, menu);
-  if (name === "remove_from_order") return removeItem(order, input);
-  return fail(order, `Unknown tool "${name}".`);
+  return removeItem(order, input);
+}
+
+export function runOrderTool(order, name, input, menu) {
+  if (order.submittedAt) {
+    return fail(order, `This order was already submitted as ${order.orderId} and can't be changed in chat. The T2&Co team can help with changes.`);
+  }
+  if (name === "confirm_order") return confirmOrder(order, input);
+  if (name === "save_customer_details") return saveCustomerDetails(order, input);
+  if (!ITEM_TOOLS.includes(name)) return fail(order, `Unknown tool "${name}".`);
+
+  // Changing what is being bought after confirmation means the new total must be confirmed again.
+  const before = itemsSignature(order);
+  const result = runItemTool(order, name, input, menu);
+  if (result.ok && order.confirmed && itemsSignature(order) !== before) {
+    order.confirmed = false;
+    order.confirmedAt = null;
+    refresh(order);
+    result.note = "The order changed after it was confirmed. Show the new summary and total and confirm again.";
+  }
+  return result;
 }

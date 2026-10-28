@@ -1,6 +1,9 @@
 // T2&Co backend: serves the static frontend and POST /api/chat (T2&Co Bot via the Claude API).
 // The bot's menu comes from data/menu.json; restart the server after editing it.
 // Each chat has an in-memory order (see order.js) that the bot changes through tools.
+// When the customer uploads their payment receipt, the order is submitted and saved (see orderStore.js).
+// The website's order buttons and checkout page use /api/order/* with the same order and rules.
+// After each order: an email to the customer, and a grouped summary to the owner (see notify.js).
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -8,7 +11,18 @@ import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 import dotenv from "dotenv";
 import express from "express";
-import { ORDER_TOOLS, createOrder, runOrderTool, summarizeOrder } from "./order.js";
+import {
+  ORDER_TOOLS,
+  createOrder,
+  newOrderId,
+  runOrderTool,
+  submitOrder,
+  summarizeOrder,
+  unsubmitOrder,
+} from "./order.js";
+import { createOrderStore, readReceiptImage } from "./orderStore.js";
+import { createMailer } from "./email.js";
+import { createNotifier } from "./notify.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 dotenv.config({ path: path.join(ROOT, ".env"), quiet: true });
@@ -16,7 +30,8 @@ dotenv.config({ path: path.join(ROOT, ".env"), quiet: true });
 const PORT = Number(process.env.PORT) || 3000;
 const FRONTEND_DIR = path.join(ROOT, "frontend");
 const SYSTEM_PROMPT_FILE = path.join(ROOT, "prompts", "system-prompt.md");
-const MENU_FILE = path.join(ROOT, "data", "menu.json");
+const DATA_DIR = path.join(ROOT, "data");
+const MENU_FILE = path.join(DATA_DIR, "menu.json");
 
 const MODEL = "claude-opus-5-5";
 const MAX_TOKENS = 16000;
@@ -28,7 +43,16 @@ const MAX_SESSIONS = 1000;
 const FALLBACK_REPLY =
   "Sorry, I can't reply right now. Please try again in a moment, or reach us through the Contact page.";
 
+const RECEIPT_MESSAGE = "(I uploaded my payment receipt.)";
+
 const client = new Anthropic();
+const orderStore = createOrderStore(DATA_DIR);
+const mailer = createMailer(process.env);
+const notifier = createNotifier({
+  mailer,
+  orderStore,
+  summaryHours: Number(process.env.OWNER_SUMMARY_HOURS) > 0 ? Number(process.env.OWNER_SUMMARY_HOURS) : 3,
+});
 const MENU = loadMenu();
 const SYSTEM_PROMPT = loadSystemPrompt();
 
@@ -92,7 +116,7 @@ function loadSystemPrompt() {
 const app = express();
 app.disable("x-powered-by");
 app.use(express.static(FRONTEND_DIR));
-app.use(express.json({ limit: "20kb" }));
+app.use(express.json({ limit: "8mb" })); // room for one receipt image (max 5 MB before base64)
 
 function isValidTurn(turn) {
   return (
@@ -104,14 +128,18 @@ function isValidTurn(turn) {
   );
 }
 
-function validateChat({ message, conversationHistory, sessionId } = {}) {
-  if (typeof message !== "string" || message.trim() === "") {
+function validateChat({ message, conversationHistory, sessionId, image } = {}) {
+  const imageOnly = image !== undefined && (message === undefined || message === "");
+  if (!imageOnly && (typeof message !== "string" || message.trim() === "")) {
     return '"message" is required and must be a non-empty string.';
+  }
+  if (image !== undefined && (image === null || typeof image !== "object")) {
+    return '"image" must be an object with "mediaType" and base64 "data".';
   }
   if (sessionId !== undefined && (typeof sessionId !== "string" || sessionId.length > 64)) {
     return '"sessionId" must be the value returned by a previous reply.';
   }
-  if (message.length > MAX_MESSAGE_LENGTH) {
+  if (!imageOnly && message.length > MAX_MESSAGE_LENGTH) {
     return `"message" must be ${MAX_MESSAGE_LENGTH} characters or fewer.`;
   }
   if (conversationHistory !== undefined) {
@@ -146,18 +174,72 @@ function getSession(sessionId) {
   return { sessionId, session };
 }
 
+// Submits the order once its payment receipt arrives, from the chat or the website checkout.
+// Only accepted when the order is confirmed and all details are in. The image is never sent to the AI.
+function processReceipt(session, image, source) {
+  const { order } = session;
+  if (order.status !== "awaiting_payment") return { ok: false, notReady: true };
+  const receipt = readReceiptImage(image);
+  if (receipt.error) return { ok: false, error: receipt.error };
+  const check = orderStore.checkNewOrder(order, receipt);
+  if (check.error) return { ok: false, error: check.error };
+
+  try {
+    const orderId = newOrderId();
+    submitOrder(order, {
+      orderId,
+      receiptFile: orderStore.saveReceipt(orderId, receipt),
+      receiptHash: receipt.hash,
+      source,
+      customerId: check.customerId,
+      customerOrderNumber: check.customerOrderNumber,
+      possibleDuplicateOf: check.possibleDuplicateOf,
+    });
+    orderStore.saveOrder(order);
+    notifier.orderSubmitted({ ...order }); // emails go out in the background
+    return { ok: true, orderId };
+  } catch (err) {
+    console.error("Could not save order:", err.name);
+    unsubmitOrder(order);
+    return { ok: false, error: "The receipt could not be saved because of a problem on our side. Please upload it again in a minute." };
+  }
+}
+
+// What the bot is told about a receipt uploaded in the chat.
+function receiptNote(session, image) {
+  const result = processReceipt(session, image, "chat");
+  if (result.ok) {
+    const email = mailer.configured
+      ? `A confirmation email is being sent to ${session.order.customer.email}; tell the customer.`
+      : "No confirmation email is sent, so don't promise one.";
+    return `Payment receipt received and saved. The order is now submitted with order number ${result.orderId}. ${email} Thank the customer, give them the order number, and follow Step 6.`;
+  }
+  if (result.notReady) {
+    return `The customer uploaded an image as a payment receipt, but it was NOT saved because the order is not ready for payment (status: ${session.order.status}). Explain kindly what is still needed first.`;
+  }
+  return `The customer's receipt upload was rejected: ${result.error} Explain this kindly and ask them to try again.`;
+}
+
+// The customer and website only see the order itself, not internal checks.
+function publicOrder(order) {
+  const { receiptFile, receiptHash, customerId, customerOrderNumber, possibleDuplicateOf, ...visible } = order;
+  return visible;
+}
+
 // The API needs the conversation to start with a user turn, so drop any leading bot greeting.
-// The current order rides along as a system note after the newest message.
-function buildMessages(conversationHistory = [], message, order) {
+// The current order (and any server note) rides along as a system note after the newest message.
+function buildMessages(conversationHistory = [], message, order, serverNote) {
   const recent = conversationHistory.slice(-MAX_HISTORY).map(({ role, content }) => ({ role, content }));
   while (recent.length > 0 && recent[0].role !== "user") recent.shift();
+  const note = [
+    serverNote && `Server note: ${serverNote}`,
+    `Current order summary:\n${summarizeOrder(order, MENU)}`,
+    `Current order state (worked out by the server):\n${JSON.stringify(publicOrder(order))}`,
+  ];
   return [
     ...recent,
     { role: "user", content: message.trim() },
-    {
-      role: "system",
-      content: `Current order summary:\n${summarizeOrder(order, MENU)}\n\nCurrent order state (worked out by the server):\n${JSON.stringify(order)}`,
-    },
+    { role: "system", content: note.filter(Boolean).join("\n\n") },
   ];
 }
 
@@ -224,9 +306,12 @@ app.post("/api/chat", async (req, res) => {
   if (error) return res.status(400).json({ error });
 
   const { sessionId, session } = getSession(req.body.sessionId);
-  const orderInfo = () => ({ sessionId, order: session.order, summary: summarizeOrder(session.order, MENU) });
+  const orderInfo = () => ({ sessionId, order: publicOrder(session.order), summary: summarizeOrder(session.order, MENU) });
   try {
-    const messages = buildMessages(req.body.conversationHistory, req.body.message, session.order);
+    const { image, conversationHistory } = req.body;
+    const message = req.body.message?.trim() || RECEIPT_MESSAGE;
+    const serverNote = image !== undefined ? receiptNote(session, image) : null;
+    const messages = buildMessages(conversationHistory, message, session.order, serverNote);
     const response = await askClaude(messages, session);
 
     const reply = response ? replyText(response) : "";
@@ -239,6 +324,75 @@ app.post("/api/chat", async (req, res) => {
     logApiError(err);
     res.status(503).json({ reply: FALLBACK_REPLY, ...orderInfo() });
   }
+});
+
+// Website ordering ("Order Now" buttons and the checkout page). It uses the same order, rules and
+// session as the chat, so a customer can mix both. sessionId travels in the body, never in the URL.
+const WEBSITE_ACTIONS = {
+  add: ({ productId, quantity }) => ["add_to_order", { productId, quantity }],
+  update: ({ productId, quantity }) => ["update_order_item", { productId, quantity }],
+  remove: ({ productId }) => ["remove_from_order", { productId }],
+  confirm: ({ total }) => ["confirm_order", { customerConfirmedTotal: total }],
+  details: ({ name, email, whatsapp, address, city }) => ["save_customer_details", { name, email, whatsapp, address, city }],
+};
+
+function orderResponse(sessionId, session, result = { ok: true }) {
+  return {
+    ok: result.ok,
+    ...(result.error ? { error: result.error } : {}),
+    ...(result.missing ? { missing: result.missing } : {}),
+    sessionId,
+    order: publicOrder(session.order),
+    summary: summarizeOrder(session.order, MENU),
+  };
+}
+
+function websiteSession(body) {
+  const id = typeof body?.sessionId === "string" && body.sessionId.length <= 64 ? body.sessionId : undefined;
+  return getSession(id);
+}
+
+app.post("/api/order/view", (req, res) => {
+  const { sessionId, session } = websiteSession(req.body);
+  res.json(orderResponse(sessionId, session));
+});
+
+// Bank details are only shown once the order is confirmed and all customer details are saved.
+app.post("/api/order/payment-details", (req, res) => {
+  const { sessionId, session } = websiteSession(req.body);
+  if (session.order.status !== "awaiting_payment") {
+    return res.status(409).json(orderResponse(sessionId, session, { ok: false, error: "Confirm your order and add your details first." }));
+  }
+  res.json({
+    ...orderResponse(sessionId, session),
+    bank: {
+      accountName: process.env.BANK_ACCOUNT_NAME,
+      bankName: process.env.BANK_NAME,
+      accountNumber: process.env.BANK_ACCOUNT_NUMBER,
+      iban: process.env.BANK_IBAN,
+    },
+  });
+});
+
+app.post("/api/order/receipt", (req, res) => {
+  const { sessionId, session } = websiteSession(req.body);
+  const result = processReceipt(session, req.body?.image, "website");
+  if (result.notReady) result.error = "Confirm your order and add your details before uploading the receipt.";
+  res.status(result.ok ? 200 : 400).json({
+    ...orderResponse(sessionId, session, result),
+    orderId: result.orderId,
+    confirmationEmail: Boolean(result.ok && mailer.configured),
+  });
+});
+
+app.post("/api/order/:action", (req, res) => {
+  const toTool = WEBSITE_ACTIONS[req.params.action];
+  if (!toTool) return res.status(404).json({ error: "Not found." });
+  const { sessionId, session } = websiteSession(req.body);
+  const [tool, input] = toTool(req.body ?? {});
+  const result = runOrderTool(session.order, tool, input, MENU);
+  session.order = result.order;
+  res.status(result.ok ? 200 : 400).json(orderResponse(sessionId, session, result));
 });
 
 app.use((err, req, res, next) => {
@@ -258,4 +412,5 @@ app.listen(PORT, () => {
   console.log(`Serving frontend from ${FRONTEND_DIR}`);
   console.log(`ANTHROPIC_API_KEY loaded: ${keySet ? "yes" : "no"}`);
   console.log(`Chat model: ${MODEL}`);
+  notifier.start();
 });

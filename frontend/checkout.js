@@ -14,13 +14,44 @@
     awaiting_payment: "payment",
     submitted: "done",
   };
+  const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   const DETAIL_FIELDS = [
-    { name: "name", label: "Full name", type: "text", autocomplete: "name" },
-    { name: "email", label: "Email", type: "email", autocomplete: "email" },
-    { name: "whatsapp", label: "WhatsApp number", type: "tel", autocomplete: "tel", hint: "We'll message you about delivery." },
-    { name: "address", label: "Delivery address", type: "textarea", autocomplete: "street-address", hint: "House, street and area." },
-    { name: "city", label: "City", type: "text", autocomplete: "address-level2" },
+    { name: "name", label: "Full name", type: "text", autocomplete: "name", empty: "Your full name needs to be filled." },
+    {
+      name: "email",
+      label: "Email",
+      type: "email",
+      autocomplete: "email",
+      empty: "Email needs to be filled.",
+      check: (v) => (EMAIL_PATTERN.test(v) ? "" : "Please enter a valid email, for example name@gmail.com."),
+    },
+    {
+      name: "whatsapp",
+      label: "WhatsApp number",
+      type: "tel",
+      autocomplete: "tel",
+      hint: "We'll message you about delivery.",
+      empty: "Your WhatsApp number is empty.",
+      check: (v) => (/^\d{10,15}$/.test(v.replace(/[\s()+-]/g, "")) ? "" : "WhatsApp number should be 10 to 15 digits, for example 0300 1234567."),
+    },
+    { name: "address", label: "Delivery address", type: "textarea", autocomplete: "street-address", hint: "House, street and area.", empty: "Your delivery address is empty." },
+    { name: "city", label: "City", type: "text", autocomplete: "address-level2", empty: "City needs to be filled." },
   ];
+
+  // The same rules the server uses, checked first so the customer sees what's missing right away.
+  function fieldProblem(field, value) {
+    const v = value.trim();
+    if (!v) return field.empty;
+    return field.check ? field.check(v) : "";
+  }
+
+  function setFieldError(input, message) {
+    const popup = document.getElementById(`${input.id}-error`);
+    popup.textContent = message;
+    popup.hidden = !message;
+    if (message) input.setAttribute("aria-invalid", "true");
+    else input.removeAttribute("aria-invalid");
+  }
 
   const root = document.getElementById("checkout");
   const message = document.querySelector(".checkout-message");
@@ -156,10 +187,12 @@
         autocomplete: field.autocomplete,
         required: "",
         ...(field.type === "textarea" ? { rows: "3" } : { type: field.type }),
-        ...(field.hint ? { "aria-describedby": `${id}-hint` } : {}),
+        "aria-describedby": [field.hint && `${id}-hint`, `${id}-error`].filter(Boolean).join(" "),
       });
       input.value = order.customer[field.name] || "";
-      wrap.append(label, input);
+      const popup = el("p", "field-popup", { id: `${id}-error`, role: "alert", hidden: "" });
+      input.addEventListener("input", () => setFieldError(input, ""));
+      wrap.append(label, input, popup);
       if (field.hint) {
         const hint = text("p", "field-hint", field.hint);
         hint.id = `${id}-hint`;
@@ -173,6 +206,18 @@
     form.append(submit);
     form.addEventListener("submit", (event) => {
       event.preventDefault();
+      let firstProblem = null;
+      for (const field of DETAIL_FIELDS) {
+        const input = form.elements[field.name];
+        const problem = fieldProblem(field, input.value);
+        setFieldError(input, problem);
+        if (problem && !firstProblem) firstProblem = input;
+      }
+      if (firstProblem) {
+        showMessage("");
+        firstProblem.focus();
+        return;
+      }
       const values = Object.fromEntries(DETAIL_FIELDS.map((f) => [f.name, form.elements[f.name].value]));
       act("details", values);
     });

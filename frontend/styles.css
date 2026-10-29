@@ -856,6 +856,7 @@ a, button, summary, label { touch-action: manipulation; }
   border-radius: var(--radius-lg);
   object-fit: cover;
 }
+.about-photo--natural { aspect-ratio: auto; height: auto; } /* show the whole photo, no cropping */
 .about-photo--placeholder {
   display: grid;
   place-items: center;
@@ -1283,6 +1284,34 @@ body:has(#nav-toggle:checked) .chat-widget { display: none; }
 }
 .checkout-card > * + * { margin-top: var(--space-4); }
 .checkout-card .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+/* Small pop-up under a checkout field that is empty or invalid */
+.field-popup {
+  position: relative;
+  align-self: flex-start;
+  margin: var(--space-1) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  background: var(--color-error);
+  color: var(--color-on-primary);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  box-shadow: var(--shadow-sm);
+  animation: popup-in var(--dur-fast) var(--ease-out);
+}
+.field-popup::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: var(--space-4);
+  border: 6px solid transparent;
+  border-top: 0;
+  border-bottom-color: var(--color-error);
+}
+.field-popup[hidden] { display: none; }
+.form-field [aria-invalid="true"] { border-color: var(--color-error); }
+@keyframes popup-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .field-popup { animation: none; } }
 .checkout-heading { margin: 0; font-family: var(--font-display); font-size: var(--text-xl); }
 .checkout-note { font-size: var(--text-sm); color: var(--color-text-muted); }
 
@@ -1374,7 +1403,7 @@ body:has(#nav-toggle:checked) .chat-widget { display: none; }
 }
 
 @media (min-width: 768px) {
-  .collection-grid { grid-template-columns: repeat(3, 1fr); }
+  .collection-grid { grid-auto-flow: column; grid-auto-columns: 1fr; } /* one column per card shown */
   .testimonial-grid { grid-template-columns: repeat(3, 1fr); }
 }
 

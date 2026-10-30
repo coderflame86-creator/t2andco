@@ -180,6 +180,14 @@ export function removeItem(order, { productId, optionId, quantity }) {
   return { ok: true, removed: { name: line.name, option: line.optionLabel, quantity: removed }, order: refresh(order) };
 }
 
+// Empties the order ("cancel that", "start over"). Customer details are kept so they needn't retype them.
+export function clearOrder(order) {
+  order.items = [];
+  order.confirmed = false;
+  order.confirmedAt = null;
+  return { ok: true, order: refresh(order) };
+}
+
 // The customer must agree to the exact total the server worked out.
 export function confirmOrder(order, { customerConfirmedTotal }) {
   if (order.items.length === 0) return fail(order, "The order is empty.");
@@ -290,6 +298,12 @@ export const ORDER_TOOLS = [
     },
   },
   {
+    name: "clear_order",
+    description:
+      "Remove every item from the order, when the customer clearly wants to cancel the whole order or start over. Not for removing one item (use remove_from_order). Can't be used after the order is submitted.",
+    input_schema: { type: "object", properties: {}, additionalProperties: false },
+  },
+  {
     name: "confirm_order",
     description:
       "Mark the order as confirmed. Call it only after you showed the customer the full order summary and total and they explicitly said yes. Pass the total they agreed to.",
@@ -355,6 +369,7 @@ export function runOrderTool(order, name, input, menu) {
   if (order.submittedAt) {
     return fail(order, `This order was already submitted as ${order.orderId} and can't be changed in chat. The T2&Co team can help with changes.`);
   }
+  if (name === "clear_order") return clearOrder(order);
   if (name === "confirm_order") return confirmOrder(order, input);
   if (name === "save_customer_details") return saveCustomerDetails(order, input);
   if (!ITEM_TOOLS.includes(name)) return fail(order, `Unknown tool "${name}".`);

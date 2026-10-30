@@ -41,7 +41,7 @@ const MAX_TOOL_ROUNDS = 4;
 const SESSION_TTL_MS = 2 * 60 * 60 * 1000;
 const MAX_SESSIONS = 1000;
 const FALLBACK_REPLY =
-  "Sorry, I can't reply right now. Please try again in a moment, or reach us through the Contact page.";
+  "Sorry, I can't reply right now. Please try again in a moment, or WhatsApp our team on 0323 0955496.";
 
 const RECEIPT_MESSAGE = "(I uploaded my payment receipt.)";
 
@@ -117,6 +117,28 @@ const app = express();
 app.disable("x-powered-by");
 app.use(express.static(FRONTEND_DIR));
 app.use(express.json({ limit: "8mb" })); // room for one receipt image (max 5 MB before base64)
+
+// Simple per-visitor limit (by IP address) so nobody can flood the chat and run up the AI bill.
+// In memory, so it resets when the server restarts.
+const RATE_WINDOW_MS = 10 * 60 * 1000;
+function rateLimit(maxRequests, message) {
+  const hits = new Map(); // ip -> { count, windowStart }
+  return (req, res, next) => {
+    const now = Date.now();
+    const entry = hits.get(req.ip);
+    if (!entry || now - entry.windowStart > RATE_WINDOW_MS) {
+      if (hits.size > 10000) hits.clear();
+      hits.set(req.ip, { count: 1, windowStart: now });
+      return next();
+    }
+    entry.count++;
+    if (entry.count > maxRequests) return res.status(429).json({ ok: false, reply: message, error: message });
+    next();
+  };
+}
+const SLOW_DOWN = "You're sending messages very quickly. Please wait a few minutes and try again, or WhatsApp us on 0323 0955496.";
+app.use("/api/chat", rateLimit(30, SLOW_DOWN));
+app.use("/api/order", rateLimit(120, SLOW_DOWN));
 
 function isValidTurn(turn) {
   return (
@@ -332,6 +354,7 @@ const WEBSITE_ACTIONS = {
   add: ({ productId, quantity }) => ["add_to_order", { productId, quantity }],
   update: ({ productId, quantity }) => ["update_order_item", { productId, quantity }],
   remove: ({ productId }) => ["remove_from_order", { productId }],
+  clear: () => ["clear_order", {}],
   confirm: ({ total }) => ["confirm_order", { customerConfirmedTotal: total }],
   details: ({ name, email, whatsapp, address, city }) => ["save_customer_details", { name, email, whatsapp, address, city }],
 };

@@ -13,7 +13,7 @@
   const HISTORY_TURNS = 10;
   const REQUEST_TIMEOUT_MS = 60000;
   const ERROR_REPLY =
-    "Sorry, I can't connect right now. Please check your internet and try again, or reach us through the Contact page.";
+    "Sorry, I can't connect right now. Please check your internet and try again, or WhatsApp our team on 0323 0955496.";
   const RECEIPT_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
   const RECEIPT_HISTORY_TEXT = "(I uploaded my payment receipt.)";

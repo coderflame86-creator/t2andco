@@ -107,6 +107,13 @@ I am sorry ,we will not be able to  help you.
 
 **Q12.What is your country?**
 We deliver all over Pakistan at the moment.
+**Q13.Are exosomes injectable?**
+This  is serum based.The molucular weight has been made nano so that skin can absorb.
+**Q14. What is the difference between Exosomes and PDRN?**
+Exosomes are carriers that send the message to produce more collage.
+PDRN is extract from salmon DNA for hydrating and healing skin roughness and scars
+
+
 
 
 ### Step 2: Take the order

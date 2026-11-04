@@ -262,9 +262,59 @@
     });
   }
 
+  // Browsers block autoplay with sound until the visitor has interacted, so fall back to muted.
+  async function playWithSoundIfAllowed(video) {
+    try {
+      await video.play();
+    } catch {
+      video.muted = true;
+      video.play().catch(() => {});
+    }
+  }
+
+  function initPlayOnView() {
+    const videos = document.querySelectorAll("video[data-play-on-view]");
+    if (!videos.length || !("IntersectionObserver" in window)) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(({ target, isIntersecting }) => {
+        if (isIntersecting) playWithSoundIfAllowed(target);
+        else target.pause();
+      });
+    }, { threshold: 0.6 });
+    videos.forEach((video) => observer.observe(video));
+  }
+
+  function initHeroVideos() {
+    document.querySelectorAll(".slide--video").forEach((video) => {
+      const playFromStart = () => {
+        video.currentTime = 0;
+        video.play().catch(() => {});
+      };
+      video.addEventListener("animationstart", playFromStart);
+      video.addEventListener("animationiteration", playFromStart);
+    });
+  }
+
+  function initConcernPicker() {
+    const select = document.getElementById("concern-select");
+    if (!select) return;
+    const panels = document.querySelectorAll(".concern [data-concern]");
+    const showSelected = () => {
+      panels.forEach((panel) => {
+        panel.hidden = panel.dataset.concern !== select.value;
+      });
+    };
+    select.addEventListener("change", showSelected);
+    showSelected();
+  }
+
   function init() {
     pauseAutoplayIfReducedMotion();
     initOrderButtons();
+    initConcernPicker();
+    initPlayOnView();
+    initHeroVideos();
     if (loadSessionId()) orderAction("view", {}).then((result) => updateCartCount(result.order));
     const ui = buildWidget();
 

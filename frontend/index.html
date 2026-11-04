@@ -55,11 +55,13 @@
           <p class="eyebrow">Authentic &middot; Imported from Japan</p>
           <h1>Bringing the best of Japan to everyone ready to begin</h1>
           <p class="hero-sub">Authentic J-Beauty skincare, pure Pink Himalayan salt and quality Japanese cars, carefully chosen and brought to your door.</p>        </div>
-        <!-- CSS-only slideshow: 5 slides, 5 seconds each. Pauses on hover, focus or the pause button. -->
+        <!-- CSS-only slideshow: two 8-second videos, then 5 images at 5 seconds each. Pauses on hover, focus or the pause button. -->
         <section class="hero-art hero-slider" aria-roledescription="carousel" aria-label="Night-time skincare routine">
           <input type="checkbox" id="slider-pause" class="slider-pause" aria-label="Pause slideshow">
           <label for="slider-pause" class="slider-pause-btn" aria-hidden="true"></label>
           <div class="slides">
+            <video class="slide slide--video" src="assets/video/hero-girl.mp4" autoplay muted playsinline preload="auto" aria-label="A woman holding a bottle of NMN High Class Moist Essence"></video>
+            <video class="slide slide--video" src="assets/video/hero-skin.mp4" muted playsinline preload="auto" aria-label="A woman with smooth, youthful skin between bottles of The Stem Cell and Exosome Deep Porn"></video>
             <img class="slide" src="assets/images/hero-products.jpg" alt="Japanese skincare serums, lotion and gel displayed on ice cubes" width="2000" height="1125" fetchpriority="high">
             <img class="slide" src="assets/images/hero-night-1.webp" alt="Night 1. Step 1: wash your face with your favourite face wash. Step 2: use Pure Retinol. Step 3: use your favourite moisturizer after using Retinol." width="2000" height="1017" loading="lazy">
             <img class="slide" src="assets/images/hero-night-2.webp" alt="Night 2. Step 1: wash your face with your favourite face wash. Step 2: use The Stem Cell. Step 3: use your favourite moisturizer after using The Stem Cell." width="2000" height="1017" loading="lazy">
@@ -67,48 +69,161 @@
             <img class="slide" src="assets/images/hero-repeat.webp" alt="Repeat the three-night routine." width="2000" height="1017" loading="lazy">
           </div>
           <div class="slider-dots" aria-hidden="true">
-            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span><span></span><span></span>
           </div>
         </section>
       </div>
     </section>
 
-    <!-- Animated collections (cards fade up on load) -->
-    <section class="section collections" id="collections">
+    <!-- Shop by concern: pick a skin concern to see its step-by-step routine -->
+    <section class="section concern" id="collections">
       <div class="container">
         <div class="section-head">
-          <p class="eyebrow">Our Collections</p>
-          <h2>Two ways to bring Japan home</h2>
-          <p>Thoughtfully sourced, honestly priced and chosen with care.</p>
+          <h2>Shop by concern</h2>
         </div>
-        <div class="collection-grid">
-          <a class="collection-card" href="anti-aging.html">
-            <span class="collection-icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="currentColor"><rect x="18" y="4" width="12" height="8" rx="2"/><path d="M14 16h20v26a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4z"/></svg>
-            </span>
-            <h3>J-Beauty Skincare</h3>
-            <p>Anti-aging, hydration and brightening care from Japan's favourite skincare rituals.</p>
-            <span class="collection-link">Shop skincare &rarr;</span>
-          </a>
-          <a class="collection-card" href="pink-salt.html">
-            <span class="collection-icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="currentColor"><polygon points="24,4 42,18 36,44 12,44 6,18"/></svg>
-            </span>
-            <h3>Pink Himalayan Salt</h3>
-            <p>Natural, unrefined pink salt for your kitchen, your table and your bath.</p>
-            <span class="collection-link">Shop pink salt &rarr;</span>
-          </a>
-          <!-- HIDDEN FOR NOW: to show the Japanese Cars card again, delete this line and the "END OF HIDDEN CARD" line below,
-               and change the heading above back to "Three ways to bring Japan home".
-          <a class="collection-card" href="cars.html">
-            <span class="collection-icon" aria-hidden="true">
-              <svg viewBox="0 0 48 48" fill="currentColor"><path d="M6 30l5-10a4 4 0 0 1 3.6-2.2h18.8A4 4 0 0 1 37 20l5 10v7a2 2 0 0 1-2 2h-3a2 2 0 0 1-2-2v-2H13v2a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2z"/></svg>
-            </span>
-            <h3>Japanese Cars</h3>
-            <p>Reliable, fuel-efficient Japanese cars, imported with care and full transparency.</p>
-            <span class="collection-link">View cars &rarr;</span>
-          </a>
-          END OF HIDDEN CARD -->
+        <div class="concern-picker">
+          <label for="concern-select">Your skin concern</label>
+          <select id="concern-select" class="concern-select">
+            <option value="wrinkles" selected>Wrinkled skin</option>
+            <option value="dry">Dry and flaky skin</option>
+            <option value="pigmented">Dark and pigmented skin</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="routine" id="routine-wrinkles" data-concern="wrinkles">
+        <div class="routine-grid" role="group" aria-label="Routine for wrinkled skin">
+          <figure class="routine-slide routine-slide--intro">
+            <img src="assets/images/concern/routine-intro.gif" alt="A woman gently pressing skincare into her cheeks" width="640" height="360" loading="lazy">
+            <figcaption>Your 4-step routine for wrinkled skin</figcaption>
+          </figure>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 1</p>
+              <span class="routine-rule"></span>
+              <p class="routine-lead">Cleanse your face with your favourite cleanser.</p>
+            </div>
+          </div>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 2</p>
+              <p class="routine-headline">Work on the messenger</p>
+              <span class="routine-rule"></span>
+              <a class="routine-product" href="anti-aging.html">Exosomes</a>
+            </div>
+            <div class="routine-art">
+              <img class="routine-bottle" src="assets/images/concern/exosome-bottle.png" alt="Exosome serum bottle" width="240" height="640" loading="lazy">
+            </div>
+          </div>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 3</p>
+              <p class="routine-headline">Work on the target problem</p>
+              <span class="routine-rule"></span>
+              <a class="routine-product" href="anti-aging.html">Retinol</a>
+            </div>
+            <div class="routine-art">
+              <img class="routine-bottle" src="assets/images/concern/retinol-bottle.png" alt="Retinol serum bottle" width="242" height="640" loading="lazy">
+            </div>
+          </div>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 4</p>
+              <p class="routine-headline">Seal it!</p>
+              <span class="routine-rule"></span>
+              <a class="routine-product" href="brightening.html">Hada Labo Lotion</a>
+            </div>
+            <div class="routine-art">
+              <img class="routine-bottle" src="assets/images/concern/hadalabo-bottle.png" alt="Hada Labo Shiro Jyun lotion bottle" width="216" height="640" loading="lazy">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="routine routine--gold" id="routine-dry" data-concern="dry" hidden>
+        <div class="routine-grid" role="group" aria-label="Routine for dry and flaky skin">
+          <figure class="routine-slide routine-slide--intro">
+            <img src="assets/images/concern/routine-intro.gif" alt="A woman gently pressing skincare into her cheeks" width="640" height="360" loading="lazy">
+            <figcaption>Your 4-step routine for dry and flaky skin</figcaption>
+          </figure>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 1</p>
+              <span class="routine-rule"></span>
+              <p class="routine-lead">Cleanse your face with your favourite cleanser.</p>
+            </div>
+          </div>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 2</p>
+              <p class="routine-headline">Work at DNA level</p>
+              <span class="routine-rule"></span>
+              <a class="routine-product" href="anti-aging.html">NMN</a>
+            </div>
+            <div class="routine-art">
+              <img class="routine-bottle" src="assets/images/concern/nmn-bottle.png" alt="NMN High Class Moist Essence bottle" width="232" height="640" loading="lazy">
+            </div>
+          </div>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 3</p>
+              <p class="routine-headline">Work on the target problem</p>
+              <span class="routine-rule"></span>
+              <a class="routine-product" href="hydration-firming.html">The Stem Cell with Antioxidant</a>
+            </div>
+            <div class="routine-art">
+              <img class="routine-bottle" src="assets/images/concern/stemcell-bottle.png" alt="The Stem Cell Premium bottle" width="190" height="640" loading="lazy">
+            </div>
+          </div>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 4</p>
+              <p class="routine-headline">Seal it!</p>
+              <span class="routine-rule"></span>
+              <a class="routine-product" href="hydration-firming.html">Niacinamide Moisturizer</a>
+            </div>
+            <div class="routine-art">
+              <img class="routine-bottle" src="assets/images/concern/niacinamide-tube.png" alt="Cica Niacinamide and Shea Butter cream tube" width="267" height="640" loading="lazy">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="routine routine--maroon" id="routine-pigmented" data-concern="pigmented" hidden>
+        <div class="routine-grid routine-grid--four" role="group" aria-label="Routine for dark and pigmented skin">
+          <figure class="routine-slide routine-slide--intro">
+            <img src="assets/images/concern/routine-intro.gif" alt="A woman gently pressing skincare into her cheeks" width="640" height="360" loading="lazy">
+            <figcaption>Your 3-step routine for dark and pigmented skin</figcaption>
+          </figure>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 1</p>
+              <span class="routine-rule"></span>
+              <p class="routine-lead">Cleanse your face with your favourite cleanser.</p>
+            </div>
+          </div>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 2</p>
+              <p class="routine-headline">Work at DNA level</p>
+              <span class="routine-rule"></span>
+              <a class="routine-product" href="anti-aging.html">NMN</a>
+            </div>
+            <div class="routine-art">
+              <img class="routine-bottle" src="assets/images/concern/nmn-bottle.png" alt="NMN High Class Moist Essence bottle" width="232" height="640" loading="lazy">
+            </div>
+          </div>
+          <div class="routine-slide">
+            <div class="routine-text">
+              <p class="routine-step">Step 3</p>
+              <p class="routine-headline">Target the dark areas and seal it!</p>
+              <span class="routine-rule"></span>
+              <a class="routine-product" href="brightening.html">Brightening Lotion with Tranexamic Acid</a>
+            </div>
+            <div class="routine-art">
+              <img class="routine-bottle" src="assets/images/concern/hadalabo-bottle-brightening.png" alt="Hada Labo Shiro Jyun brightening lotion bottle" width="188" height="640" loading="lazy">
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -212,11 +327,14 @@
     </section>
 
     <!-- Closing CTA -->
-    <section class="section cta-band">
-      <div class="container">
-        <h2>Ready to begin?</h2>
-        <p>Tell us what you are looking for and we will help you find it.</p>
-        <a class="btn btn-primary btn-lg" href="contact.html">Contact Us</a>
+    <section class="section blog-band">
+      <div class="container blog-band-inner">
+        <div class="blog-band-text">
+          <h2>Meet Maham</h2>
+          <p>Skincare tips, routines and stories from the T2&amp;Co team.</p>
+        </div>
+        <video class="blog-band-video" src="assets/video/maham-intro.mp4" controls playsinline preload="metadata" data-play-on-view aria-label="Maham introduces T2&amp;Co"></video>
+        <a class="blog-band-link" href="blogs.html">Blogs <span aria-hidden="true">&rarr;</span></a>
       </div>
     </section>
   </main>

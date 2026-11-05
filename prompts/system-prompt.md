@@ -109,7 +109,7 @@ This  is serum based.The molucular weight has been made nano so that skin can ab
 **Q14. What is the difference between Exosomes and PDRN?**
 Exosomes are carriers that send the message to produce more collage.
 PDRN is extract from salmon DNA for hydrating and healing skin roughness and scars
-**Q14. What is your refund policy?**
+**Q15. What is your refund policy?**
 We refund if product is broken. Claim can only be made within 2 days after recieving.Contact 0323-0955496.
 
 

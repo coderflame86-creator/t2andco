@@ -3,8 +3,6 @@
 T2&Co sells:
 
 - **J-Beauty skincare** (main line): Japanese skincare products
-- **Pink Himalayan salt**
-- **Japanese car imports**
 
 Brand color: maroon `#7B1F3E` (from the logo)
 

@@ -2,11 +2,7 @@
 
 ## Purpose
 
-T2&Co is a business website for three product lines:
-
-1. **J-Beauty skincare** (main focus): Japanese skincare products
-2. **Pink Himalayan salt**
-3. **Japanese car imports**
+T2&Co is a business website for **J-Beauty skincare**: Japanese skincare products.
 
 Brand colours: white `#FFFFFF`, aqua mist `#CAF0F8`, platinum `#D9DDE1`, maroon `#7A1C2E`. Tone: warm and minimal. The logo is a serif "T2 | &Co" wordmark.
 
@@ -23,7 +19,6 @@ prompts/    AI prompts for product copy and content
 
 - The frontend reads product data from `data/` or from the backend API.
 - The backend serves the data and will handle enquiries and orders later.
-- Keep the three product lines separate in data and UI. Skincare comes first.
 
 ## Scope rule
 
@@ -47,7 +42,6 @@ prompts/    AI prompts for product copy and content
 - Do not use `innerHTML` with user or external data. Use `textContent` or escape the data first.
 - Use HTTPS. Do not put personal data in URLs or query strings.
 - Do not store payment card details. Use a trusted payment provider.
-- Car import listings must not include personal owner data (for example, the full VIN tied to an owner's identity).
 
 ## Token-saving rules
 

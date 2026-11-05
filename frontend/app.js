@@ -159,7 +159,7 @@
       tabindex: "0",
     });
     const empty = el("p", "chat-empty");
-    empty.textContent = "Ask us about J-Beauty skincare, pink salt or Japanese cars.";
+    empty.textContent = "Ask us about Japanese skincare.";
     messages.append(empty);
 
     const form = el("form", "chat-form");

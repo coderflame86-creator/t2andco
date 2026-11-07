@@ -1305,9 +1305,17 @@ a, button, summary, label { touch-action: manipulation; }
   background: var(--color-surface-alt);
 }
 
-.chat-empty {
+.chat-start {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+  max-width: 18rem;
   margin: auto;
-  max-width: 16rem;
+}
+
+.chat-empty {
+  margin: 0;
   text-align: center;
   font-size: var(--text-sm);
   color: var(--color-text-muted);

@@ -17,6 +17,7 @@
   const RECEIPT_TYPES = ["image/jpeg", "image/png", "image/webp"];
   const MAX_RECEIPT_BYTES = 5 * 1024 * 1024;
   const RECEIPT_HISTORY_TEXT = "(I uploaded my payment receipt.)";
+  const START_CHOICES = ["I'd like to order", "I'd like to know about skincare"];
 
   const ICON_CHAT =
     '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H10l-4.2 3.6c-.6.5-1.5.1-1.5-.7V16h-.3A2.5 2.5 0 0 1 4 13.5z"/></svg>';
@@ -158,8 +159,15 @@
       "aria-label": "Chat messages",
       tabindex: "0",
     });
-    const empty = el("p", "chat-empty");
-    empty.textContent = "Ask us about Japanese skincare.";
+    const empty = el("div", "chat-start");
+    const welcome = el("p", "chat-empty");
+    welcome.textContent = "Welcome to T2&Co! How can we help you today?";
+    const choices = START_CHOICES.map((text) => {
+      const choice = el("button", "btn btn-outline", { type: "button" });
+      choice.textContent = text;
+      return choice;
+    });
+    empty.append(welcome, ...choices);
     messages.append(empty);
 
     const form = el("form", "chat-form");
@@ -188,7 +196,7 @@
     root.append(panel, toggle);
     document.body.append(root);
 
-    return { toggle, panel, close, messages, empty, form, input, send, attach, file };
+    return { toggle, panel, close, messages, empty, choices, form, input, send, attach, file };
   }
 
   function addBubble(ui, text, sender) {
@@ -323,7 +331,7 @@
       ui.toggle.setAttribute("aria-expanded", String(open));
       ui.toggle.setAttribute("aria-label", open ? "Close chat" : "Open chat");
       document.body.classList.toggle("chat-open", open);
-      if (open) ui.input.focus();
+      if (open) (ui.empty.isConnected ? ui.choices[0] : ui.input).focus();
     }
 
     ui.toggle.addEventListener("click", () => setOpen(ui.panel.hidden));
@@ -366,13 +374,21 @@
       ui.input.focus();
     }
 
+    function sendText(text) {
+      addBubble(ui, text, "user");
+      send(text, text);
+    }
+
     ui.form.addEventListener("submit", (event) => {
       event.preventDefault();
       const text = ui.input.value.trim().slice(0, MAX_LENGTH);
       if (!text || waiting) return;
-      addBubble(ui, text, "user");
       ui.input.value = "";
-      send(text, text);
+      sendText(text);
+    });
+
+    ui.choices.forEach((choice) => {
+      choice.addEventListener("click", () => sendText(choice.textContent));
     });
 
     ui.attach.addEventListener("click", () => ui.file.click());

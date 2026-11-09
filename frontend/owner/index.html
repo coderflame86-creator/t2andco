@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Owner Dashboard | T2&amp;Co</title>
+  <meta name="theme-color" content="#7A1C2E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap">
+  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="owner.css">
+</head>
+<body class="owner-page">
+  <header class="owner-header">
+    <div class="container owner-header-inner">
+      <a class="logo" href="../index.html" aria-label="T2&amp;Co website">
+        <img src="../assets/images/logo.webp" alt="T2&amp;Co" width="2000" height="764">
+      </a>
+      <p class="owner-title">Owner dashboard</p>
+      <button type="button" class="btn btn-outline owner-logout" id="logout" hidden>Log out</button>
+    </div>
+  </header>
+
+  <main id="main" class="container owner-main">
+    <section id="login-view" class="owner-login" hidden aria-labelledby="login-heading">
+      <form id="login-form" class="form-card" novalidate>
+        <h1 id="login-heading" class="owner-heading">Log in</h1>
+        <div class="form-field">
+          <label for="login-username">Username</label>
+          <input id="login-username" name="username" type="text" autocomplete="username" required>
+        </div>
+        <div class="form-field">
+          <label for="login-password">Password</label>
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required>
+        </div>
+        <p class="owner-error" id="login-error" role="alert" hidden></p>
+        <button type="submit" class="btn btn-primary">Log in</button>
+      </form>
+    </section>
+
+    <section id="dashboard" hidden>
+      <div class="owner-tabs" role="group" aria-label="Show">
+        <button type="button" class="owner-tab" data-view="orders" aria-pressed="true">Orders</button>
+        <button type="button" class="owner-tab" data-view="customers" aria-pressed="false">Customers</button>
+      </div>
+
+      <section id="orders-view" aria-labelledby="orders-heading">
+        <h1 id="orders-heading" class="visually-hidden">Orders</h1>
+        <div class="owner-toolbar">
+          <div class="owner-segment" role="group" aria-label="Group orders by">
+            <button type="button" data-period="day" aria-pressed="true">Day</button>
+            <button type="button" data-period="week" aria-pressed="false">Week</button>
+            <button type="button" data-period="month" aria-pressed="false">Month</button>
+          </div>
+          <div class="owner-period">
+            <button type="button" class="owner-arrow" id="period-prev" aria-label="Previous period">&larr;</button>
+            <p class="owner-period-label" id="period-label" aria-live="polite"></p>
+            <button type="button" class="owner-arrow" id="period-next" aria-label="Next period">&rarr;</button>
+            <button type="button" class="owner-link" id="period-today">Today</button>
+          </div>
+          <label class="owner-filter">
+            <span>Status</span>
+            <select id="status-filter">
+              <option value="all">All orders</option>
+              <option value="open">Awaiting payment check</option>
+              <option value="complete">Complete</option>
+            </select>
+          </label>
+        </div>
+
+        <dl class="owner-stats">
+          <div><dt>Orders</dt><dd id="stat-orders">0</dd></div>
+          <div><dt>Revenue</dt><dd id="stat-revenue">PKR 0</dd></div>
+          <div><dt>Awaiting check</dt><dd id="stat-open">0</dd></div>
+        </dl>
+
+        <p class="owner-error" id="orders-error" role="alert" hidden></p>
+        <ol class="owner-orders" id="order-list"></ol>
+        <p class="owner-empty" id="orders-empty" hidden>No orders in this period.</p>
+      </section>
+
+      <section id="customers-view" hidden aria-labelledby="customers-heading">
+        <h1 id="customers-heading" class="visually-hidden">Customers</h1>
+        <div class="owner-toolbar">
+          <label class="owner-filter owner-search">
+            <span>Search</span>
+            <input type="search" id="customer-search" placeholder="Name, email, WhatsApp or city">
+          </label>
+          <label class="form-check owner-offers-only">
+            <input type="checkbox" id="offers-only">
+            <span>Only customers who agreed to email offers</span>
+          </label>
+          <button type="button" class="btn btn-outline" id="download-customers">Download CSV</button>
+        </div>
+        <p class="owner-note">Only email offers and discounts to customers marked &ldquo;Yes&rdquo;. They agreed to receive them.</p>
+        <div class="owner-table-wrap">
+          <table class="owner-table">
+            <thead>
+              <tr>
+                <th scope="col">Customer</th>
+                <th scope="col">Contact</th>
+                <th scope="col">City</th>
+                <th scope="col">Orders</th>
+                <th scope="col">Spent</th>
+                <th scope="col">Last order</th>
+                <th scope="col">Email offers</th>
+              </tr>
+            </thead>
+            <tbody id="customer-rows"></tbody>
+          </table>
+        </div>
+        <p class="owner-empty" id="customers-empty" hidden>No customers found.</p>
+      </section>
+    </section>
+  </main>
+
+  <dialog class="owner-dialog" id="receipt-dialog" aria-labelledby="receipt-title">
+    <div class="owner-dialog-head">
+      <h2 id="receipt-title">Payment receipt</h2>
+      <button type="button" class="owner-link" id="receipt-close">Close</button>
+    </div>
+    <img id="receipt-image" alt="">
+  </dialog>
+
+  <script src="owner.js" defer></script>
+</body>
+</html>

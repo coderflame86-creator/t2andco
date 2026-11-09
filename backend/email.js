@@ -1,5 +1,5 @@
-// Order emails through Gmail: an instant "order received" email to the customer, and a grouped
-// summary of new orders to the owner. Plain text only, so customer-typed details can't inject anything.
+// Order emails through Gmail: an instant "order received" email to the customer, and a "new order"
+// email to the owner with the receipt attached. Plain text only, so customer-typed details can't inject anything.
 // Emails are off (and only logged) until SMTP_USER and SMTP_PASS are set in .env.
 import nodemailer from "nodemailer";
 
@@ -70,34 +70,36 @@ export function createMailer(env, transport = gmailTransport(env)) {
       return send({ to: c.email, subject: headerSafe(`Your T2&Co order ${order.orderId} has been received`), text });
     },
 
-    // One email for all orders since the last summary, with the up-to-date spreadsheet attached.
-    sendOwnerSummary(orders, excelFile) {
-      const total = orders.reduce((sum, o) => sum + o.total, 0);
-      const blocks = orders.map((o) => {
-        const c = o.customer;
-        return [
-          `${o.orderId}  (${when(o.submittedAt)}, via ${o.source === "website" ? "website" : "chat"})`,
-          `  ${c.name} · ${c.whatsapp} · ${c.email}`,
-          `  ${c.address}, ${c.city}`,
-          ...itemLines(o).map((line) => `  ${line}`),
-          `  Total: ${money(o.total, o.currency)}`,
-          o.possibleDuplicateOf ? `  ⚠ Possible duplicate of ${o.possibleDuplicateOf}. Check before sending.` : null,
-          o.customerOrderNumber > 1 ? `  Returning customer (order no. ${o.customerOrderNumber}).` : null,
-        ].filter(Boolean).join("\n");
-      });
+    // Sent to the owner right after each order, with the payment receipt attached.
+    sendNewOrderToOwner(order, receiptFile) {
+      const c = order.customer;
+      const dashboard = env.SITE_URL ? `${env.SITE_URL.replace(/\/+$/, "")}/owner/` : null;
       const text = [
-        `${orders.length} new order${orders.length > 1 ? "s" : ""} · ${money(total, orders[0].currency)}`,
+        `New order ${order.orderId}`,
+        `Placed on ${when(order.submittedAt)}, via ${order.source === "website" ? "the website" : "the chat"}.`,
         "",
-        "Payment receipts are in the attached spreadsheet (and in data/receipts on the computer running the site).",
-        "Please check each payment in your bank before sending.",
+        "Customer:",
+        `  ${c.name}`,
+        `  Email: ${c.email}`,
+        `  WhatsApp: ${c.whatsapp}`,
+        `  Address: ${c.address}, ${c.city}`,
+        `  Email offers: ${order.emailOffers ? "yes" : "no"}`,
+        order.customerOrderNumber > 1 ? `  Returning customer (order no. ${order.customerOrderNumber}).` : null,
         "",
-        blocks.join("\n\n"),
-      ].join("\n");
+        "Items:",
+        ...itemLines(order),
+        `Total: ${money(order.total, order.currency)}`,
+        order.possibleDuplicateOf ? `\n⚠ Possible duplicate of ${order.possibleDuplicateOf}. Check before sending.` : null,
+        "",
+        receiptFile ? "The payment receipt is attached." : "No receipt image was found for this order.",
+        "Check the payment in your bank, then mark the order complete in the owner dashboard.",
+        dashboard,
+      ].filter((line) => line !== null).join("\n");
       return send({
         to: owner,
-        subject: `T2&Co: ${orders.length} new order${orders.length > 1 ? "s" : ""} (${money(total, orders[0].currency)})`,
+        subject: headerSafe(`New T2&Co order ${order.orderId}: ${money(order.total, order.currency)}`),
         text,
-        attachments: [{ filename: "T2Co-orders.xlsx", path: excelFile }],
+        attachments: receiptFile ? [{ filename: `${order.orderId}-receipt${receiptFile.slice(receiptFile.lastIndexOf("."))}`, path: receiptFile }] : [],
       });
     },
   };

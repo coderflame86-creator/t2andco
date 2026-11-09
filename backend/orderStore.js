@@ -109,7 +109,16 @@ export function createOrderStore(dataDir) {
       updateSpreadsheet(); // runs in the background; orders.json is already safe
     },
     readOrders,
-    // Records email progress on saved orders, e.g. { ownerNotifiedAt: "..." } or { customerEmail: {...} }.
+    findOrder(orderId) {
+      return readOrders().find((o) => o.orderId === orderId) ?? null;
+    },
+    // Full path of an order's receipt image, only if it is inside data/receipts.
+    receiptPath(order) {
+      if (!order?.receiptFile) return null;
+      const file = path.resolve(dataDir, order.receiptFile);
+      return file.startsWith(receiptsDir + path.sep) && fs.existsSync(file) ? file : null;
+    },
+    // Records email progress on saved orders, e.g. { ownerEmail: {...} } or { customerEmail: {...} }.
     updateOrders(orderIds, changes) {
       const ids = new Set(orderIds);
       const orders = readOrders().map((o) => (ids.has(o.orderId) ? { ...o, ...changes(o) } : o));

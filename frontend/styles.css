@@ -1144,6 +1144,16 @@ a, button, summary, label { touch-action: manipulation; }
 .form-field input:user-invalid ~ .field-error,
 .form-field textarea:user-invalid ~ .field-error { display: block; }
 
+.form-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-5);
+  font-size: 0.9375rem;
+  cursor: pointer;
+}
+.form-check input { flex: none; width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--color-primary); }
+
 .form-card .btn { width: 100%; }
 .form-note { margin: var(--space-4) 0 0; font-size: var(--text-sm); text-align: center; color: var(--color-text-muted); }
 

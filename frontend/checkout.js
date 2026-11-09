@@ -200,6 +200,11 @@
       }
       form.append(wrap);
     }
+    const offers = el("label", "form-check");
+    const offersBox = el("input", "", { type: "checkbox", name: "emailOffers" });
+    offersBox.checked = Boolean(order.emailOffers);
+    offers.append(offersBox, text("span", "", "Email me T2&Co offers and discounts. You can stop them any time."));
+    form.append(offers);
     const saved = order.status === "awaiting_payment";
     const submit = el("button", "btn btn-primary btn-lg", { type: "submit" });
     submit.textContent = saved ? "Update details" : "Save details and continue";
@@ -219,7 +224,7 @@
         return;
       }
       const values = Object.fromEntries(DETAIL_FIELDS.map((f) => [f.name, form.elements[f.name].value]));
-      act("details", values);
+      act("details", { ...values, emailOffers: form.elements.emailOffers.checked });
     });
     return form;
   }

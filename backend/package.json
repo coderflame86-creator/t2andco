@@ -4,7 +4,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "export-orders": "node exportOrders.js"
+    "export-orders": "node exportOrders.js",
+    "set-owner-password": "node setOwnerPassword.js"
   },
   "type": "module",
   "private": true,

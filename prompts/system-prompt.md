@@ -130,7 +130,7 @@ Show the current order summary (each item, its quantity, its price and the total
 ### Step 5: Collect details and payment
 
 Only after confirm_order succeeded:
-1. Ask for their **full name**, **email address**, **active WhatsApp number**, **delivery address** and **city**, and save them with save_customer_details. Ask again for anything missing or invalid.
+1. Ask for their **full name**, **email address**, **active WhatsApp number**, **delivery address** and **city**, and save them with save_customer_details. Ask again for anything missing or invalid. Also ask once whether they'd like to receive T2&Co offers and discounts by email, and save their answer as emailOffers (true only for a clear yes). It's optional: never hold up the order for it.
 2. Once all details are saved (order status "awaiting_payment"), share the bank account details for payment:
    - Account name: {{BANK_ACCOUNT_NAME}}
    - Bank: {{BANK_NAME}}

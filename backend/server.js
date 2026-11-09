@@ -3,7 +3,8 @@
 // Each chat has an in-memory order (see order.js) that the bot changes through tools.
 // When the customer uploads their payment receipt, the order is submitted and saved (see orderStore.js).
 // The website's order buttons and checkout page use /api/order/* with the same order and rules.
-// After each order: an email to the customer, and a grouped summary to the owner (see notify.js).
+// After each order: an email to the customer and one to the owner (see notify.js).
+// The owner dashboard is at /owner (frontend/owner), with its login-protected API at /owner/api (see ownerRoutes.js).
 import { randomUUID } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
@@ -23,6 +24,8 @@ import {
 import { createOrderStore, readReceiptImage } from "./orderStore.js";
 import { createMailer } from "./email.js";
 import { createNotifier } from "./notify.js";
+import { createOwnerAuth } from "./ownerAuth.js";
+import { createOwnerRoutes } from "./ownerRoutes.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 dotenv.config({ path: path.join(ROOT, ".env"), quiet: true });
@@ -30,8 +33,9 @@ dotenv.config({ path: path.join(ROOT, ".env"), quiet: true });
 const PORT = Number(process.env.PORT) || 3000;
 const FRONTEND_DIR = path.join(ROOT, "frontend");
 const SYSTEM_PROMPT_FILE = path.join(ROOT, "prompts", "system-prompt.md");
-const DATA_DIR = path.join(ROOT, "data");
-const MENU_FILE = path.join(DATA_DIR, "menu.json");
+// Orders and receipts can live elsewhere (e.g. a server's persistent disk) by setting DATA_DIR.
+const DATA_DIR = process.env.DATA_DIR ? path.resolve(process.env.DATA_DIR) : path.join(ROOT, "data");
+const MENU_FILE = path.join(ROOT, "data", "menu.json");
 
 const MODEL = "claude-opus-5-5";
 const MAX_TOKENS = 16000;
@@ -48,11 +52,8 @@ const RECEIPT_MESSAGE = "(I uploaded my payment receipt.)";
 const client = new Anthropic();
 const orderStore = createOrderStore(DATA_DIR);
 const mailer = createMailer(process.env);
-const notifier = createNotifier({
-  mailer,
-  orderStore,
-  summaryHours: Number(process.env.OWNER_SUMMARY_HOURS) > 0 ? Number(process.env.OWNER_SUMMARY_HOURS) : 3,
-});
+const notifier = createNotifier({ mailer, orderStore });
+const ownerAuth = createOwnerAuth(process.env);
 const MENU = loadMenu();
 const SYSTEM_PROMPT = loadSystemPrompt();
 
@@ -117,6 +118,7 @@ const app = express();
 app.disable("x-powered-by");
 app.use(express.static(FRONTEND_DIR));
 app.use(express.json({ limit: "8mb" })); // room for one receipt image (max 5 MB before base64)
+app.use("/owner/api", createOwnerRoutes({ auth: ownerAuth, orderStore }));
 
 // Simple per-visitor limit (by IP address) so nobody can flood the chat and run up the AI bill.
 // In memory, so it resets when the server restarts.
@@ -356,7 +358,10 @@ const WEBSITE_ACTIONS = {
   remove: ({ productId }) => ["remove_from_order", { productId }],
   clear: () => ["clear_order", {}],
   confirm: ({ total }) => ["confirm_order", { customerConfirmedTotal: total }],
-  details: ({ name, email, whatsapp, address, city }) => ["save_customer_details", { name, email, whatsapp, address, city }],
+  details: ({ name, email, whatsapp, address, city, emailOffers }) => [
+    "save_customer_details",
+    { name, email, whatsapp, address, city, emailOffers },
+  ],
 };
 
 function orderResponse(sessionId, session, result = { ok: true }) {
@@ -435,5 +440,6 @@ app.listen(PORT, () => {
   console.log(`Serving frontend from ${FRONTEND_DIR}`);
   console.log(`ANTHROPIC_API_KEY loaded: ${keySet ? "yes" : "no"}`);
   console.log(`Chat model: ${MODEL}`);
+  console.log(`Owner dashboard: /owner (${ownerAuth.configured ? "login set" : "no login yet, run: npm run set-owner-password"})`);
   notifier.start();
 });

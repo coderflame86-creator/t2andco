@@ -53,6 +53,8 @@ function notesText(order) {
   const notes = [];
   if (order.possibleDuplicateOf) notes.push(`Possible duplicate of ${order.possibleDuplicateOf}: same items and total within 24 hours. Check before sending.`);
   if (order.customerOrderNumber > 1) notes.push(`Returning customer (order no. ${order.customerOrderNumber}).`);
+  if (order.completedAt) notes.push("Complete: payment checked by the owner.");
+  if (order.emailOffers) notes.push("Agreed to receive offers by email.");
   return notes.join("\n");
 }
 

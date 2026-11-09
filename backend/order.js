@@ -12,6 +12,7 @@ export function createOrder(currency) {
     items: [],
     orderType: "delivery",
     customer: { name: null, email: null, whatsapp: null, address: null, city: null },
+    emailOffers: false, // true only when the customer agreed to receive offers by email
     promotion: null,
     currency,
     subtotal: 0,
@@ -225,6 +226,7 @@ export function saveCustomerDetails(order, details) {
   }
   if (details.address !== undefined) save("address", cleanText(details.address, 300), "Address must not be empty.");
   if (details.city !== undefined) save("city", cleanText(details.city, 100), "City must not be empty.");
+  if (typeof details.emailOffers === "boolean") order.emailOffers = details.emailOffers;
 
   refresh(order);
   const missing = Object.keys(order.customer).filter((field) => !order.customer[field]);
@@ -326,6 +328,10 @@ export const ORDER_TOOLS = [
         whatsapp: { type: "string", description: "Active WhatsApp number." },
         address: { type: "string", description: "Full delivery address (house, street, area)." },
         city: { type: "string" },
+        emailOffers: {
+          type: "boolean",
+          description: "true only if the customer clearly said yes to receiving offers and discounts by email; false if they said no.",
+        },
       },
       additionalProperties: false,
     },

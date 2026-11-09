@@ -53,8 +53,9 @@
             <button type="button" data-period="day" aria-pressed="true">Day</button>
             <button type="button" data-period="week" aria-pressed="false">Week</button>
             <button type="button" data-period="month" aria-pressed="false">Month</button>
+            <button type="button" data-period="all" aria-pressed="false">All time</button>
           </div>
-          <div class="owner-period">
+          <div class="owner-period" id="period-nav">
             <button type="button" class="owner-arrow" id="period-prev" aria-label="Previous period">&larr;</button>
             <p class="owner-period-label" id="period-label" aria-live="polite"></p>
             <button type="button" class="owner-arrow" id="period-next" aria-label="Next period">&rarr;</button>
@@ -72,8 +73,9 @@
 
         <dl class="owner-stats">
           <div><dt>Orders</dt><dd id="stat-orders">0</dd></div>
-          <div><dt>Revenue</dt><dd id="stat-revenue">PKR 0</dd></div>
+          <div><dt>Complete</dt><dd id="stat-complete">0</dd></div>
           <div><dt>Awaiting check</dt><dd id="stat-open">0</dd></div>
+          <div><dt>Revenue</dt><dd id="stat-revenue">PKR 0</dd></div>
         </dl>
 
         <p class="owner-error" id="orders-error" role="alert" hidden></p>

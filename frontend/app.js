@@ -173,9 +173,9 @@
     const form = el("form", "chat-form");
     const label = el("label", "visually-hidden", { for: "chat-input" });
     label.textContent = "Type your message";
-    const input = el("input", "chat-input", {
+    const input = el("textarea", "chat-input", {
       id: "chat-input",
-      type: "text",
+      rows: "1",
       autocomplete: "off",
       maxlength: String(MAX_LENGTH),
       placeholder: "Type a message…",
@@ -379,13 +379,28 @@
       send(text, text);
     }
 
+    // The message box grows with its text (up to a few lines), then scrolls.
+    function fitInput() {
+      ui.input.style.height = "auto";
+      ui.input.style.height = `${ui.input.scrollHeight}px`;
+    }
+
     ui.form.addEventListener("submit", (event) => {
       event.preventDefault();
       const text = ui.input.value.trim().slice(0, MAX_LENGTH);
       if (!text || waiting) return;
       ui.input.value = "";
+      fitInput();
       sendText(text);
     });
+
+    // Enter sends; Shift+Enter starts a new line (e.g. name, email and address on separate lines).
+    ui.input.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || event.shiftKey || event.isComposing) return;
+      event.preventDefault();
+      ui.form.requestSubmit();
+    });
+    ui.input.addEventListener("input", fitInput);
 
     ui.choices.forEach((choice) => {
       choice.addEventListener("click", () => sendText(choice.textContent));

@@ -40,7 +40,8 @@ function readCookie(req, name) {
 export function createOwnerAuth(env) {
   const sessions = new Map(); // token -> expiresAt
   const failures = new Map(); // ip -> { count, since }
-  const configured = Boolean(env.OWNER_USERNAME && env.OWNER_PASSWORD_HASH);
+  // A password typed into .env by hand (instead of the hash from set-owner-password) can never match.
+  const configured = Boolean(env.OWNER_USERNAME && env.OWNER_PASSWORD_HASH?.startsWith("scrypt:"));
 
   function isLockedOut(ip, now) {
     const entry = failures.get(ip);
@@ -76,7 +77,7 @@ export function createOwnerAuth(env) {
     // Returns null on success, or an error message.
     login(req, res, { username, password } = {}) {
       const now = Date.now();
-      if (!configured) return "Owner login is not set up yet. Run: npm run set-owner-password";
+      if (!configured) return "Owner login is not set up yet. In the backend folder, run: npm.cmd run set-owner-password";
       if (isLockedOut(req.ip, now)) return "Too many failed attempts. Please wait 15 minutes and try again.";
       const valid =
         typeof username === "string" &&

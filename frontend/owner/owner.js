@@ -40,6 +40,7 @@
 
   // Start (inclusive) and end (exclusive) of the period that contains the anchor day. Weeks start on Monday.
   function periodRange(period, anchor) {
+    if (period === "all") return [new Date(0), new Date(8.64e15)];
     if (period === "day") return [anchor, new Date(anchor.getTime() + DAY_MS)];
     if (period === "week") {
       const start = new Date(anchor.getTime() - ((anchor.getUTCDay() + 6) % 7) * DAY_MS);
@@ -161,18 +162,21 @@
 
   function renderOrders() {
     const range = periodRange(state.period, state.anchor);
-    $("period-label").textContent = periodLabel(state.period, range);
+    $("period-nav").hidden = state.period === "all";
+    $("period-label").textContent = state.period === "all" ? "" : periodLabel(state.period, range);
     document.querySelectorAll("[data-period]").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.period === state.period)));
 
     const inPeriod = ordersInPeriod();
+    const complete = inPeriod.filter((o) => o.completedAt).length;
     $("stat-orders").textContent = String(inPeriod.length);
+    $("stat-complete").textContent = String(complete);
+    $("stat-open").textContent = String(inPeriod.length - complete);
     $("stat-revenue").textContent = money(inPeriod.reduce((sum, o) => sum + o.total, 0));
-    $("stat-open").textContent = String(inPeriod.filter((o) => !o.completedAt).length);
 
     const shown = inPeriod.filter((o) => state.status === "all" || (state.status === "complete") === Boolean(o.completedAt));
     $("order-list").replaceChildren(...shown.map(orderCard));
     $("orders-empty").hidden = shown.length > 0;
-    $("orders-empty").textContent = inPeriod.length ? "No orders match this status." : "No orders in this period.";
+    $("orders-empty").textContent = inPeriod.length ? "No orders match this status." : state.period === "all" ? "No orders yet." : "No orders in this period.";
   }
 
   function detailRow(list, label, value) {
@@ -255,13 +259,27 @@
     } else {
       const done = el("button", "btn btn-primary", "Payment checked · Mark complete");
       done.type = "button";
-      done.addEventListener("click", () => {
-        const ok = window.confirm(`Mark ${order.orderId} (${money(order.total)}) complete? Only do this after the payment is in your bank.`);
-        if (ok) setComplete(order, true, done);
-      });
+      done.addEventListener("click", () => actions.replaceWith(confirmComplete(order)));
       actions.append(done);
     }
     return actions;
+  }
+
+  // Asks on the page itself (browser pop-ups can be blocked, which would silently cancel).
+  function confirmComplete(order) {
+    const box = el("div", "owner-actions owner-confirm");
+    box.setAttribute("role", "group");
+    box.setAttribute("aria-label", `Confirm order ${order.orderId}`);
+    const question = el("p", "owner-confirm-text", `Is ${money(order.total)} for ${order.orderId} in your bank account?`);
+    const yes = el("button", "btn btn-primary", "Yes, mark complete");
+    yes.type = "button";
+    yes.addEventListener("click", () => setComplete(order, true, yes));
+    const cancel = el("button", "btn btn-outline", "Cancel");
+    cancel.type = "button";
+    cancel.addEventListener("click", () => box.replaceWith(orderActions(order)));
+    box.append(question, yes, cancel);
+    queueMicrotask(() => yes.focus());
+    return box;
   }
 
   async function setComplete(order, complete, button) {
@@ -272,9 +290,10 @@
     });
     if (!result.ok) {
       button.disabled = false;
-      if (result.status !== 401) window.alert(result.data.error || "Could not update the order. Please try again.");
+      if (result.status !== 401) showError("orders-error", result.data.error || "Could not update the order. Please try again.");
       return;
     }
+    showError("orders-error", "");
     state.orders = state.orders.map((o) => (o.orderId === order.orderId ? result.data.order : o));
     render();
   }
@@ -410,7 +429,7 @@
   async function start() {
     const result = await api("/session");
     if (result.data.loggedIn) return showDashboard();
-    showLogin(result.data.configured ? "" : "Owner login is not set up yet. In the backend folder, run: npm run set-owner-password");
+    showLogin(result.data.configured ? "" : "Owner login is not set up yet. In the backend folder, run: npm.cmd run set-owner-password");
   }
 
   start();

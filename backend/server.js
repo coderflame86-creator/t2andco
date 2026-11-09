@@ -440,6 +440,6 @@ app.listen(PORT, () => {
   console.log(`Serving frontend from ${FRONTEND_DIR}`);
   console.log(`ANTHROPIC_API_KEY loaded: ${keySet ? "yes" : "no"}`);
   console.log(`Chat model: ${MODEL}`);
-  console.log(`Owner dashboard: /owner (${ownerAuth.configured ? "login set" : "no login yet, run: npm run set-owner-password"})`);
+  console.log(`Owner dashboard: /owner (${ownerAuth.configured ? "login set" : "no valid login yet, run: npm.cmd run set-owner-password"})`);
   notifier.start();
 });

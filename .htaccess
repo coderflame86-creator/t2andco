@@ -1,0 +1,17 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Prevent loop if already accessing frontend/
+    RewriteRule ^frontend/ - [L]
+
+    # If the root domain is requested, serve frontend/index.html
+    RewriteRule ^$ frontend/index.html [L]
+
+    # If requested file or directory does not exist in the root, route to frontend/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ frontend/$1 [L]
+</IfModule>
+
+# Fallback DirectoryIndex
+DirectoryIndex index.php index.html frontend/index.html

@@ -12,6 +12,7 @@ data/orders.json.tmp
 data/orders*.xlsx
 data/orders*.xlsx.tmp
 data/receipts/
+data/sessions/
 
 # OS / editor clutter
 Thumbs.db

@@ -1,16 +1,27 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Prevent loop if already accessing frontend/
+    # 1. Route API requests to index.php
+    RewriteRule ^api/ index.php [QSA,L]
+    RewriteRule ^owner/api/ index.php [QSA,L]
+
+    # 2. If already inside frontend/, do not rewrite
     RewriteRule ^frontend/ - [L]
 
-    # If the root domain is requested, serve frontend/index.html
-    RewriteRule ^$ frontend/index.html [L]
+    # 3. Direct root domain or directory access to index.php
+    RewriteRule ^$ index.php [L]
 
-    # If requested file or directory does not exist in the root, route to frontend/
+    # 4. If the file or directory exists directly inside frontend/, serve it from frontend/
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond frontend/$1 -f [OR]
+    RewriteCond frontend/$1 -d
     RewriteRule ^(.*)$ frontend/$1 [L]
+
+    # 5. Fallback for all other non-existent files to index.php
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [QSA,L]
 </IfModule>
 
 # Fallback DirectoryIndex

@@ -9,8 +9,8 @@
 # Customer orders and payment receipts (personal data, never commit)
 data/orders.json
 data/orders.json.tmp
-data/orders.xlsx
-data/orders.xlsx.tmp
+data/orders*.xlsx
+data/orders*.xlsx.tmp
 data/receipts/
 
 # OS / editor clutter

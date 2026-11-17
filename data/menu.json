@@ -28,11 +28,10 @@
       "options": [{ "id": "standard", "label": "Standard", "size": "60 ml", "price": 6500 }],
       "activeIngredients": [
         "Retinol",
-        "Human Adipose-Derived Mesenchymal Cell Exosomes",
+        " Exosomes",
         "Sodium DNA (PDRN)",
         "Nicotinamide Mononucleotide (NMN)",
-        "Placenta Extract",
-        "Water-Soluble Collagen",
+                "Water-Soluble Collagen",
         "Sodium Hyaluronate"
       ],
       "ingredients": "Glycerin, Retinol, Water-Soluble Collagen, Sodium Hyaluronate, Hydrogenated Lecithin, Xanthan Gum, Polysorbate 80, Caprylyl Glycol, 1,2-Hexanediol, Citric Acid, Sodium Citrate, Phenoxyethanol",
@@ -49,11 +48,10 @@
       "price": 7000,
       "options": [{ "id": "standard", "label": "Standard", "size": "60 ml", "price": 7000 }],
       "activeIngredients": [
-        "Human Adipose-Derived Mesenchymal Cell Exosomes",
+        " Exosomes",
         "Sodium DNA (PDRN)",
         "Nicotinamide Mononucleotide (NMN)",
-        "Placenta Extract",
-        "Water-Soluble Collagen",
+                "Water-Soluble Collagen",
         "Sodium Hyaluronate"
       ],
       "ingredients": "Water, BG (Butylene Glycol), Glycerin, Human Adipose-Derived Mesenchymal Cell Exosomes, Sodium DNA (PDRN), NMN (Nicotinamide Mononucleotide), Polysorbate 80, Caprylyl Glycol, 1,2-Hexanediol, Citric Acid, Sodium Citrate, Phenoxyethanol",
@@ -72,12 +70,12 @@
       "activeIngredients": [
         "Nicotinamide Mononucleotide (NMN)",
         "EGF (sh-Oligopeptide-1)",
-        "Human Recombinant Polypeptides (2, 9, 10, 11)",
+        " Polypeptides (2, 9, 10, 11)",
         "Salicornia Herbacea (Glasswort) Extract",
         "Sodium PCA",
         "Trehalose"
       ],
-      "ingredients": "Water, Butylene Glycol (BG), Dipropylene Glycol (DPG), Glycerin, Nicotinamide Mononucleotide (NMN), Human Recombinant Oligopeptide-1 (EGF), Human Recombinant Polypeptide-2, Human Recombinant Polypeptide-9, Human Recombinant Polypeptide-10, Human Recombinant Polypeptide-11, Salicornia Herbacea Extract (Glasswort Extract), Sodium PCA (PCA-Na), Trehalose",
+      "ingredients": "Water, Butylene Glycol (BG), Dipropylene Glycol (DPG), Glycerin, Nicotinamide Mononucleotide (NMN),  Oligopeptide-1 (EGF), Polypeptide-2,  Polypeptide-9,  Polypeptide-10,  Polypeptide-11, Salicornia Herbacea Extract (Glasswort Extract), Sodium PCA (PCA-Na), Trehalose",
       "available": true
     },
     {
@@ -136,9 +134,9 @@
         "Nicotinamide Mononucleotide (NMN)",
         "Sodium DNA (PDRN)",
         "Glycerin",
-        "Human Adipocyte Conditioned Medium Extract"
+        " Adipocyte Conditioned Medium Extract"
       ],
-      "ingredients": "Water, Glycerin, PDRN, Glutathione, Human Adipose Stromal Cell Conditioned Media Extract, Olive Fruit Oil",
+      "ingredients": "Water, Glycerin, PDRN, Glutathione,  Adipose Stromal Cell Conditioned Media Extract, Olive Fruit Oil",
       "available": true
     },
     {

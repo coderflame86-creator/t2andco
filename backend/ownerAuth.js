@@ -1,7 +1,6 @@
-// Owner login for the order dashboard. One owner account, set with: npm run set-owner-password
-// The password is stored only as a scrypt hash in .env (OWNER_PASSWORD_HASH). Sessions live in memory,
-// so the owner logs in again after a server restart.
-import { randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
+// Owner login for the order dashboard. Supports multiple owner accounts in .env:
+// OWNER_USERNAME / OWNER_PASSWORD_HASH and OWNER2_USERNAME / OWNER2_PASSWORD_HASH
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from "node:crypto";
 
 const SCRYPT = { N: 16384, r: 8, p: 1 };
 const KEY_LENGTH = 64;
@@ -19,11 +18,38 @@ export function hashPassword(password) {
 }
 
 function verifyPassword(password, stored) {
-  const [kind, N, r, p, salt, hash] = String(stored).split(":");
-  if (kind !== "scrypt" || !salt || !hash) return false;
-  const expected = Buffer.from(hash, "hex");
-  const actual = scryptSync(password, Buffer.from(salt, "hex"), expected.length, { N: Number(N), r: Number(r), p: Number(p) });
-  return timingSafeEqual(actual, expected);
+  if (typeof stored !== "string") return false;
+  if (stored.startsWith("scrypt:")) {
+    const [kind, N, r, p, salt, hash] = stored.split(":");
+    if (!salt || !hash) return false;
+    const expected = Buffer.from(hash, "hex");
+    const actual = scryptSync(password, Buffer.from(salt, "hex"), expected.length, { N: Number(N), r: Number(r), p: Number(p) });
+    return timingSafeEqual(actual, expected);
+  }
+  if (stored.startsWith("sha256:")) {
+    const [kind, salt, hash] = stored.split(":");
+    if (!salt || !hash) return false;
+    const expected = Buffer.from(hash, "hex");
+    const actual = createHash("sha256").update(salt + password).digest();
+    return expected.length === actual.length && timingSafeEqual(actual, expected);
+  }
+  return false;
+}
+
+function getOwnerAccounts(env) {
+  const accounts = [];
+  if (env.OWNER_USERNAME && env.OWNER_PASSWORD_HASH) {
+    accounts.push({ username: env.OWNER_USERNAME, hash: env.OWNER_PASSWORD_HASH });
+  }
+  if (env.OWNER2_USERNAME && env.OWNER2_PASSWORD_HASH) {
+    accounts.push({ username: env.OWNER2_USERNAME, hash: env.OWNER2_PASSWORD_HASH });
+  }
+  for (let i = 3; i <= 10; i++) {
+    if (env[`OWNER${i}_USERNAME`] && env[`OWNER${i}_PASSWORD_HASH`]) {
+      accounts.push({ username: env[`OWNER${i}_USERNAME`], hash: env[`OWNER${i}_PASSWORD_HASH`] });
+    }
+  }
+  return accounts;
 }
 
 function sameText(a, b) {
@@ -40,8 +66,8 @@ function readCookie(req, name) {
 export function createOwnerAuth(env) {
   const sessions = new Map(); // token -> expiresAt
   const failures = new Map(); // ip -> { count, since }
-  // A password typed into .env by hand (instead of the hash from set-owner-password) can never match.
-  const configured = Boolean(env.OWNER_USERNAME && env.OWNER_PASSWORD_HASH?.startsWith("scrypt:"));
+  const accounts = getOwnerAccounts(env);
+  const configured = accounts.length > 0;
 
   function isLockedOut(ip, now) {
     const entry = failures.get(ip);
@@ -79,12 +105,13 @@ export function createOwnerAuth(env) {
       const now = Date.now();
       if (!configured) return "Owner login is not set up yet. In the backend folder, run: npm.cmd run set-owner-password";
       if (isLockedOut(req.ip, now)) return "Too many failed attempts. Please wait 15 minutes and try again.";
+      const currentAccounts = getOwnerAccounts(env);
+      const account = currentAccounts.find((a) => typeof username === "string" && sameText(username.trim(), a.username));
       const valid =
-        typeof username === "string" &&
+        Boolean(account) &&
         typeof password === "string" &&
         password.length <= 200 &&
-        sameText(username.trim(), env.OWNER_USERNAME) &&
-        verifyPassword(password, env.OWNER_PASSWORD_HASH);
+        verifyPassword(password, account.hash);
       if (!valid) {
         recordFailure(req.ip, now);
         return "Wrong username or password.";

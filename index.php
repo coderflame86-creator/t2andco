@@ -89,11 +89,33 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
         $ownerSubPath = str_replace('owner/api', '', $cleanPath);
         $ownerSubPath = '/' . ltrim($ownerSubPath, '/');
 
+        $accounts = [];
+        if (!empty($env['OWNER_USERNAME']) && !empty($env['OWNER_PASSWORD_HASH'])) {
+            $accounts[] = ['username' => $env['OWNER_USERNAME'], 'hash' => $env['OWNER_PASSWORD_HASH']];
+        }
+        if (!empty($env['OWNER_USERNAME']) && !empty($env['OWNER_PASSWORD'])) {
+            $accounts[] = ['username' => $env['OWNER_USERNAME'], 'pass' => $env['OWNER_PASSWORD']];
+        }
+        if (!empty($env['OWNER2_USERNAME']) && !empty($env['OWNER2_PASSWORD_HASH'])) {
+            $accounts[] = ['username' => $env['OWNER2_USERNAME'], 'hash' => $env['OWNER2_PASSWORD_HASH']];
+        }
+        if (!empty($env['OWNER2_USERNAME']) && !empty($env['OWNER2_PASSWORD'])) {
+            $accounts[] = ['username' => $env['OWNER2_USERNAME'], 'pass' => $env['OWNER2_PASSWORD']];
+        }
+        for ($i = 3; $i <= 10; $i++) {
+            if (!empty($env["OWNER{$i}_USERNAME"]) && !empty($env["OWNER{$i}_PASSWORD_HASH"])) {
+                $accounts[] = ['username' => $env["OWNER{$i}_USERNAME"], 'hash' => $env["OWNER{$i}_PASSWORD_HASH"]];
+            }
+            if (!empty($env["OWNER{$i}_USERNAME"]) && !empty($env["OWNER{$i}_PASSWORD"])) {
+                $accounts[] = ['username' => $env["OWNER{$i}_USERNAME"], 'pass' => $env["OWNER{$i}_PASSWORD"]];
+            }
+        }
+
         $sessionToken = $_COOKIE['t2co_owner'] ?? '';
         $sessionToken = preg_replace('/[^a-zA-Z0-9_-]/', '', $sessionToken);
         $ownerSessionFile = !empty($sessionToken) ? $sessionDir . '/owner_' . $sessionToken . '.tmp' : null;
         $isLoggedIn = $ownerSessionFile && file_exists($ownerSessionFile) && (time() - filemtime($ownerSessionFile) < 12 * 3600);
-        $configured = !empty($env['OWNER_USERNAME']) && (!empty($env['OWNER_PASSWORD_HASH']) || !empty($env['OWNER_PASSWORD']));
+        $configured = count($accounts) > 0;
 
         if ($ownerSubPath === '/session') {
             echo json_encode(['loggedIn' => $isLoggedIn, 'configured' => $configured]);
@@ -101,31 +123,43 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
         }
 
         if ($ownerSubPath === '/login') {
-            $username = $input['username'] ?? '';
+            $username = trim($input['username'] ?? '');
             $password = $input['password'] ?? '';
-            if (empty($username) || empty($password) || $username !== ($env['OWNER_USERNAME'] ?? '')) {
-                http_response_code(401);
-                echo json_encode(['error' => 'Incorrect username or password.']);
-                exit;
-            }
-
             $valid = false;
-            if (!empty($env['OWNER_PASSWORD']) && hash_equals($env['OWNER_PASSWORD'], $password)) {
-                $valid = true;
-            } elseif (!empty($env['OWNER_PASSWORD_HASH'])) {
-                $storedHash = $env['OWNER_PASSWORD_HASH'];
-                if (str_starts_with($storedHash, 'scrypt:')) {
-                    $parts = explode(':', $storedHash);
-                    if (count($parts) === 6) {
-                        $salt = $parts[4];
-                        $expectedHash = $parts[5];
-                        $nodeCheck = @shell_exec("node -e \"const c=require('crypto'); const h=c.scryptSync(".json_encode($password).", Buffer.from(".json_encode($salt).",'hex'), 64, {N:16384,r:8,p:1}); process.stdout.write(h.toString('hex'));\"");
-                        if (!empty($nodeCheck) && hash_equals($expectedHash, trim($nodeCheck))) {
+
+            foreach ($accounts as $acc) {
+                if (strcasecmp($acc['username'], $username) === 0) {
+                    if (isset($acc['pass']) && hash_equals($acc['pass'], $password)) {
+                        $valid = true;
+                        break;
+                    }
+                    if (isset($acc['hash'])) {
+                        $h = $acc['hash'];
+                        if (str_starts_with($h, 'sha256:')) {
+                            $parts = explode(':', $h);
+                            if (count($parts) === 3) {
+                                $expected = hash('sha256', $parts[1] . $password);
+                                if (hash_equals($parts[2], $expected)) {
+                                    $valid = true;
+                                    break;
+                                }
+                            }
+                        } elseif (str_starts_with($h, 'scrypt:')) {
+                            $parts = explode(':', $h);
+                            if (count($parts) === 6) {
+                                $salt = $parts[4];
+                                $expectedHash = $parts[5];
+                                $nodeCheck = @shell_exec("node -e \"const c=require('crypto'); const h=c.scryptSync(".json_encode($password).", Buffer.from(".json_encode($salt).",'hex'), 64, {N:16384,r:8,p:1}); process.stdout.write(h.toString('hex'));\"");
+                                if (!empty($nodeCheck) && hash_equals($expectedHash, trim($nodeCheck))) {
+                                    $valid = true;
+                                    break;
+                                }
+                            }
+                        } elseif (password_verify($password, $h)) {
                             $valid = true;
+                            break;
                         }
                     }
-                } elseif (password_verify($password, $storedHash)) {
-                    $valid = true;
                 }
             }
 

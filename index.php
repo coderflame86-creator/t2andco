@@ -21,11 +21,13 @@ if (file_exists($envFile)) {
     }
 }
 
-$rawUri     = $_SERVER['REQUEST_URI'] ?? $_ENV['REQUEST_URI'] ?? '/';
+$rawUri     = !empty($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : (getenv('REQUEST_URI') ?: '/');
 $requestUri = parse_url($rawUri, PHP_URL_PATH);
-$rawScript  = $_SERVER['SCRIPT_NAME'] ?? $_ENV['SCRIPT_NAME'] ?? '';
-$scriptName = str_replace('\\', '/', $rawScript);
-$scriptDir  = trim(str_replace('\\', '/', dirname($scriptName)), '/');
+$rawScript  = !empty($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : (getenv('SCRIPT_NAME') ?: '');
+$rawScript  = str_replace('\\', '/', $rawScript);
+$scriptParts = explode('/', trim($rawScript, '/'));
+array_pop($scriptParts);
+$scriptDir  = implode('/', $scriptParts);
 
 // Strip script directory if running in a subdirectory (e.g. /t2andco)
 $cleanPath = trim($requestUri, '/');
@@ -79,6 +81,135 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
 
     header('Content-Type: application/json; charset=UTF-8');
     $input = json_decode(file_get_contents('php://input'), true) ?: [];
+
+    // ---------------------------------------------------------
+    // Owner API Routes (Dashboard Backend)
+    // ---------------------------------------------------------
+    if (str_starts_with($cleanPath, 'owner/api')) {
+        $ownerSubPath = str_replace('owner/api', '', $cleanPath);
+        $ownerSubPath = '/' . ltrim($ownerSubPath, '/');
+
+        $sessionToken = $_COOKIE['t2co_owner'] ?? '';
+        $sessionToken = preg_replace('/[^a-zA-Z0-9_-]/', '', $sessionToken);
+        $ownerSessionFile = !empty($sessionToken) ? $sessionDir . '/owner_' . $sessionToken . '.tmp' : null;
+        $isLoggedIn = $ownerSessionFile && file_exists($ownerSessionFile) && (time() - filemtime($ownerSessionFile) < 12 * 3600);
+        $configured = !empty($env['OWNER_USERNAME']) && (!empty($env['OWNER_PASSWORD_HASH']) || !empty($env['OWNER_PASSWORD']));
+
+        if ($ownerSubPath === '/session') {
+            echo json_encode(['loggedIn' => $isLoggedIn, 'configured' => $configured]);
+            exit;
+        }
+
+        if ($ownerSubPath === '/login') {
+            $username = $input['username'] ?? '';
+            $password = $input['password'] ?? '';
+            if (empty($username) || empty($password) || $username !== ($env['OWNER_USERNAME'] ?? '')) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Incorrect username or password.']);
+                exit;
+            }
+
+            $valid = false;
+            if (!empty($env['OWNER_PASSWORD']) && hash_equals($env['OWNER_PASSWORD'], $password)) {
+                $valid = true;
+            } elseif (!empty($env['OWNER_PASSWORD_HASH'])) {
+                $storedHash = $env['OWNER_PASSWORD_HASH'];
+                if (str_starts_with($storedHash, 'scrypt:')) {
+                    $parts = explode(':', $storedHash);
+                    if (count($parts) === 6) {
+                        $salt = $parts[4];
+                        $expectedHash = $parts[5];
+                        $nodeCheck = @shell_exec("node -e \"const c=require('crypto'); const h=c.scryptSync(".json_encode($password).", Buffer.from(".json_encode($salt).",'hex'), 64, {N:16384,r:8,p:1}); process.stdout.write(h.toString('hex'));\"");
+                        if (!empty($nodeCheck) && hash_equals($expectedHash, trim($nodeCheck))) {
+                            $valid = true;
+                        }
+                    }
+                } elseif (password_verify($password, $storedHash)) {
+                    $valid = true;
+                }
+            }
+
+            if (!$valid) {
+                http_response_code(401);
+                echo json_encode(['error' => 'Incorrect username or password.']);
+                exit;
+            }
+
+            $token = bin2hex(random_bytes(24));
+            file_put_contents($sessionDir . '/owner_' . $token . '.tmp', (string)time());
+            setcookie('t2co_owner', $token, [
+                'expires' => time() + 12 * 3600,
+                'path' => '/',
+                'httponly' => true,
+                'samesite' => 'Strict'
+            ]);
+            echo json_encode(['ok' => true]);
+            exit;
+        }
+
+        if ($ownerSubPath === '/logout') {
+            if ($ownerSessionFile && file_exists($ownerSessionFile)) @unlink($ownerSessionFile);
+            setcookie('t2co_owner', '', ['expires' => time() - 3600, 'path' => '/']);
+            echo json_encode(['ok' => true]);
+            exit;
+        }
+
+        if (!$isLoggedIn) {
+            http_response_code(401);
+            echo json_encode(['error' => 'Not logged in.']);
+            exit;
+        }
+
+        $ordersJsonPath = __DIR__ . '/data/orders.json';
+        $allOrders = file_exists($ordersJsonPath) ? json_decode(file_get_contents($ordersJsonPath), true) ?: [] : [];
+
+        if ($ownerSubPath === '/orders') {
+            $formatted = array_map(function($ord) {
+                $ord['hasReceipt'] = !empty($ord['receiptFile']);
+                unset($ord['receiptHash']);
+                return $ord;
+            }, $allOrders);
+            echo json_encode(['orders' => $formatted]);
+            exit;
+        }
+
+        if (preg_match('#^/orders/([^/]+)/receipt$#', $ownerSubPath, $m)) {
+            $orderId = $m[1];
+            $receiptPath = __DIR__ . '/data/receipts/' . $orderId . '.jpg';
+            if (!file_exists($receiptPath)) $receiptPath = __DIR__ . '/data/receipts/' . $orderId . '.png';
+            if (!file_exists($receiptPath)) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Receipt not found.']);
+                exit;
+            }
+            header('Content-Type: image/jpeg');
+            readfile($receiptPath);
+            exit;
+        }
+
+        if (preg_match('#^/orders/([^/]+)/complete$#', $ownerSubPath, $m)) {
+            $orderId = $m[1];
+            $isComplete = !empty($input['complete']);
+            $foundOrder = null;
+            foreach ($allOrders as &$ord) {
+                if ($ord['orderId'] === $orderId) {
+                    $ord['completedAt'] = $isComplete ? date('c') : null;
+                    $foundOrder = $ord;
+                    break;
+                }
+            }
+            file_put_contents($ordersJsonPath, json_encode($allOrders, JSON_PRETTY_PRINT));
+            if ($foundOrder) {
+                $foundOrder['hasReceipt'] = !empty($foundOrder['receiptFile']);
+                unset($foundOrder['receiptHash']);
+                echo json_encode(['order' => $foundOrder]);
+            } else {
+                http_response_code(404);
+                echo json_encode(['error' => 'Order not found.']);
+            }
+            exit;
+        }
+    }
 
     // Session handling for native PHP orders
     $sessionDir = __DIR__ . '/data/sessions';
@@ -280,6 +411,9 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
 // -------------------------------------------------------------
 if (empty($cleanPath) || $cleanPath === 'index.php') {
     $cleanPath = 'index.html';
+}
+if ($cleanPath === 'owner' || $cleanPath === 'owner/' || $cleanPath === 'owner/index.php') {
+    $cleanPath = 'owner/index.html';
 }
 
 $targetFile = __DIR__ . '/frontend/' . $cleanPath;

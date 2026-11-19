@@ -175,7 +175,7 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
                 'expires' => time() + 12 * 3600,
                 'path' => '/',
                 'httponly' => true,
-                'samesite' => 'Strict'
+                'samesite' => 'Lax'
             ]);
             echo json_encode(['ok' => true]);
             exit;

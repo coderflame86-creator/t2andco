@@ -4,7 +4,8 @@
 (function () {
   "use strict";
 
-  const basePath = window.location.pathname.replace(/\/owner\/[^\/]*$/, "").replace(/\/(frontend\/)?[^\/]*$/, "");
+  const path = window.location.pathname;
+  const basePath = path.includes("/t2andco") ? "/t2andco" : path.replace(/\/owner(\/.*)?$/, "").replace(/\/frontend(\/.*)?$/, "");
   const API = (basePath || "") + "/owner/api";
   const PKT_OFFSET_MS = 5 * 60 * 60 * 1000; // Pakistan time, UTC+5 all year
   const DAY_MS = 24 * 60 * 60 * 1000;

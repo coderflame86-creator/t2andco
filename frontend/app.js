@@ -5,7 +5,8 @@
 (function () {
   "use strict";
 
-  const basePath = window.location.pathname.replace(/\/(frontend\/)?[^\/]*$/, "");
+  const path = window.location.pathname;
+  const basePath = path.includes("/t2andco") ? "/t2andco" : path.replace(/\/(frontend\/)?[^\/]*$/, "");
   const CHAT_URL = (basePath || "") + "/api/chat";
   const ORDER_URL = (basePath || "") + "/api/order/";
   const SESSION_KEY = "t2co-session"; // one order per browser tab, shared by chat and website

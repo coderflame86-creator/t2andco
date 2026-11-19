@@ -6,7 +6,7 @@ const SCRYPT = { N: 16384, r: 8, p: 1 };
 const KEY_LENGTH = 64;
 const SESSION_MS = 12 * 60 * 60 * 1000;
 const COOKIE = "t2co_owner";
-const COOKIE_PATH = "/owner";
+const COOKIE_PATH = "/";
 const MAX_FAILED_LOGINS = 5;
 const LOCKOUT_MS = 15 * 60 * 1000;
 
@@ -83,7 +83,7 @@ export function createOwnerAuth(env) {
 
   function setCookie(req, res, token, maxAgeSeconds) {
     const secure = req.secure ? "; Secure" : "";
-    res.setHeader("Set-Cookie", `${COOKIE}=${token}; Path=${COOKIE_PATH}; HttpOnly; SameSite=Strict; Max-Age=${maxAgeSeconds}${secure}`);
+    res.setHeader("Set-Cookie", `${COOKIE}=${token}; Path=${COOKIE_PATH}; HttpOnly; SameSite=Lax; Max-Age=${maxAgeSeconds}${secure}`);
   }
 
   function sessionToken(req) {

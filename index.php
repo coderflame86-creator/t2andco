@@ -38,24 +38,30 @@ if (!empty($scriptDir) && str_starts_with($cleanPath, $scriptDir)) {
 // -------------------------------------------------------------
 // Helper: Proxy to Node.js backend if available on port 3000
 // -------------------------------------------------------------
-function tryProxyToNode($path) {
+function tryProxyToNode($path, $rawInput = '') {
     if (!extension_loaded('curl')) return null;
     $nodeUrl = 'http://127.0.0.1:3000/' . $path;
     $ch = curl_init($nodeUrl);
     curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $_SERVER['REQUEST_METHOD']);
-    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 300);
-    curl_setopt($ch, CURLOPT_TIMEOUT_MS, 4000);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT_MS, 150);
+    curl_setopt($ch, CURLOPT_TIMEOUT_MS, 3000);
+    curl_setopt($ch, CURLOPT_NOSIGNAL, 1);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     
     // Forward headers
     $headers = [];
     if (isset($_SERVER['CONTENT_TYPE'])) $headers[] = 'Content-Type: ' . $_SERVER['CONTENT_TYPE'];
-    if (isset($_SERVER['HTTP_AUTHORIZATION'])) $headers[] = 'Authorization: ' . $_SERVER['HTTP_AUTHORIZATION'];
+    $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+    if (empty($auth) && function_exists('apache_request_headers')) {
+        $reqH = apache_request_headers();
+        $auth = $reqH['Authorization'] ?? $reqH['authorization'] ?? '';
+    }
+    if (!empty($auth)) $headers[] = 'Authorization: ' . $auth;
     if (isset($_SERVER['HTTP_COOKIE'])) $headers[] = 'Cookie: ' . $_SERVER['HTTP_COOKIE'];
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
     if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'PATCH'])) {
-        curl_setopt($ch, CURLOPT_POSTFIELDS, file_get_contents('php://input'));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $rawInput);
     }
 
     $response = curl_exec($ch);
@@ -76,11 +82,17 @@ function tryProxyToNode($path) {
 // Route API Requests
 // -------------------------------------------------------------
 if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/api')) {
+    $rawInput = file_get_contents('php://input');
+
     // Attempt proxy to local Node server first
-    tryProxyToNode($cleanPath);
+    tryProxyToNode($cleanPath, $rawInput);
 
     header('Content-Type: application/json; charset=UTF-8');
-    $input = json_decode(file_get_contents('php://input'), true) ?: [];
+    $input = json_decode($rawInput, true) ?: [];
+
+    // Session directory for both owner login sessions and order sessions
+    $sessionDir = __DIR__ . '/data/sessions';
+    if (!is_dir($sessionDir)) @mkdir($sessionDir, 0755, true);
 
     // ---------------------------------------------------------
     // Owner API Routes (Dashboard Backend)
@@ -111,7 +123,20 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
             }
         }
 
-        $sessionToken = $_COOKIE['t2co_owner'] ?? '';
+        // Support session token via cookie or Authorization header
+        $sessionToken = '';
+        if (!empty($_COOKIE['t2co_owner'])) {
+            $sessionToken = $_COOKIE['t2co_owner'];
+        }
+        $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? '';
+        if (empty($authHeader) && function_exists('apache_request_headers')) {
+            $apacheH = apache_request_headers();
+            $authHeader = $apacheH['Authorization'] ?? $apacheH['authorization'] ?? '';
+        }
+        if (empty($sessionToken) && !empty($authHeader) && preg_match('/Bearer\s+(\S+)/i', $authHeader, $m)) {
+            $sessionToken = $m[1];
+        }
+
         $sessionToken = preg_replace('/[^a-zA-Z0-9_-]/', '', $sessionToken);
         $ownerSessionFile = !empty($sessionToken) ? $sessionDir . '/owner_' . $sessionToken . '.tmp' : null;
         $isLoggedIn = $ownerSessionFile && file_exists($ownerSessionFile) && (time() - filemtime($ownerSessionFile) < 12 * 3600);
@@ -177,13 +202,15 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
                 'httponly' => true,
                 'samesite' => 'Lax'
             ]);
-            echo json_encode(['ok' => true]);
+            header('Set-Cookie: t2co_owner=' . $token . '; Path=/; Max-Age=' . (12 * 3600) . '; HttpOnly; SameSite=Lax', false);
+            echo json_encode(['ok' => true, 'token' => $token]);
             exit;
         }
 
         if ($ownerSubPath === '/logout') {
             if ($ownerSessionFile && file_exists($ownerSessionFile)) @unlink($ownerSessionFile);
             setcookie('t2co_owner', '', ['expires' => time() - 3600, 'path' => '/']);
+            header('Set-Cookie: t2co_owner=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax', false);
             echo json_encode(['ok' => true]);
             exit;
         }

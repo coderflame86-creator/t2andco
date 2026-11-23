@@ -86,19 +86,31 @@
   }
 
   async function api(path, options = {}) {
+    const token = sessionStorage.getItem("t2co_owner_token");
+    const headers = { ...(options.headers || {}) };
+    if (options.body && !headers["Content-Type"]) {
+      headers["Content-Type"] = "application/json";
+    }
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
     const response = await fetch(API + path, {
       credentials: "same-origin",
       ...options,
-      headers: options.body ? { "Content-Type": "application/json" } : undefined,
+      headers: Object.keys(headers).length ? headers : undefined,
     });
     const data = await response.json().catch(() => ({}));
-    if (response.status === 401 && path !== "/login") showLogin();
+    if (response.status === 401 && path !== "/login") {
+      sessionStorage.removeItem("t2co_owner_token");
+      showLogin();
+    }
     return { ok: response.ok, status: response.status, data };
   }
 
   // ---------- Login ----------
 
   function showLogin(message) {
+    sessionStorage.removeItem("t2co_owner_token");
     clearInterval(refreshTimer);
     state.orders = [];
     $("dashboard").hidden = true;
@@ -124,11 +136,15 @@
     form.querySelector("button").disabled = false;
     form.elements.password.value = "";
     if (!result.ok) return showError("login-error", result.data.error || "Could not log in. Please try again.");
+    if (result.data && result.data.token) {
+      sessionStorage.setItem("t2co_owner_token", result.data.token);
+    }
     showDashboard();
   });
 
   $("logout").addEventListener("click", async () => {
     await api("/logout", { method: "POST", body: "{}" });
+    sessionStorage.removeItem("t2co_owner_token");
     showLogin();
   });
 
@@ -430,8 +446,9 @@
 
   async function start() {
     const result = await api("/session");
-    if (result.data.loggedIn) return showDashboard();
-    showLogin(result.data.configured ? "" : "Owner login is not set up yet. In the backend folder, run: npm.cmd run set-owner-password");
+    if (result.data && result.data.loggedIn) return showDashboard();
+    sessionStorage.removeItem("t2co_owner_token");
+    showLogin(result.data && result.data.configured ? "" : "Owner login is not set up yet. In the backend folder, run: npm.cmd run set-owner-password");
   }
 
   start();

@@ -27,9 +27,10 @@ export function createOwnerRoutes({ auth, orderStore }) {
   router.use(sameOrigin);
 
   router.post("/login", (req, res) => {
-    const error = auth.login(req, res, req.body);
-    if (error) return res.status(401).json({ error });
-    res.json({ ok: true });
+    const result = auth.login(req, res, req.body);
+    if (result && typeof result === "object" && result.error) return res.status(401).json({ error: result.error });
+    if (typeof result === "string") return res.status(401).json({ error: result });
+    res.json({ ok: true, token: result?.token });
   });
 
   router.post("/logout", (req, res) => {

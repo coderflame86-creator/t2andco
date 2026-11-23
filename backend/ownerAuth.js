@@ -87,7 +87,14 @@ export function createOwnerAuth(env) {
   }
 
   function sessionToken(req) {
-    const token = readCookie(req, COOKIE);
+    const authHeader = req.headers?.authorization;
+    let token = null;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      token = authHeader.slice(7).trim();
+    }
+    if (!token) {
+      token = readCookie(req, COOKIE);
+    }
     const expiresAt = token && sessions.get(token);
     if (!expiresAt) return null;
     if (expiresAt < Date.now()) {
@@ -100,11 +107,11 @@ export function createOwnerAuth(env) {
   return {
     configured,
 
-    // Returns null on success, or an error message.
+    // Returns null on success (or { error: null, token }), or an error message.
     login(req, res, { username, password } = {}) {
       const now = Date.now();
-      if (!configured) return "Owner login is not set up yet. In the backend folder, run: npm.cmd run set-owner-password";
-      if (isLockedOut(req.ip, now)) return "Too many failed attempts. Please wait 15 minutes and try again.";
+      if (!configured) return { error: "Owner login is not set up yet. In the backend folder, run: npm.cmd run set-owner-password" };
+      if (isLockedOut(req.ip, now)) return { error: "Too many failed attempts. Please wait 15 minutes and try again." };
       const currentAccounts = getOwnerAccounts(env);
       const account = currentAccounts.find((a) => typeof username === "string" && sameText(username.trim(), a.username));
       const valid =
@@ -114,14 +121,14 @@ export function createOwnerAuth(env) {
         verifyPassword(password, account.hash);
       if (!valid) {
         recordFailure(req.ip, now);
-        return "Wrong username or password.";
+        return { error: "Wrong username or password." };
       }
       failures.delete(req.ip);
-      for (const [token, expiresAt] of sessions) if (expiresAt < now) sessions.delete(token);
+      for (const [t, expiresAt] of sessions) if (expiresAt < now) sessions.delete(t);
       const token = randomBytes(32).toString("hex");
       sessions.set(token, now + SESSION_MS);
       setCookie(req, res, token, SESSION_MS / 1000);
-      return null;
+      return { error: null, token };
     },
 
     logout(req, res) {

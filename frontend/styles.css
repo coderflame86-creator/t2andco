@@ -32,6 +32,8 @@
   --color-text: #1F2328;
   --color-text-muted: #4B5563;
   --color-error: #B42318;
+  --color-whatsapp: #25D366;
+  --color-whatsapp-hover: #20BA5A;
 
   /* Typography */
   --font-display: "Playfair Display", Georgia, "Times New Roman", serif;
@@ -1216,9 +1218,44 @@ a, button, summary, label { touch-action: manipulation; }
   font-size: var(--text-sm);
 }
 .footer-bottom p { margin: 0; }
-/* Phones: keep the last footer line clear of the floating chat button */
+/* Phones: keep the last footer line clear of the floating chat & whatsapp buttons */
 @media (max-width: 639px) {
-  .footer-bottom { padding-bottom: calc(56px + 2 * var(--space-4)); }
+  .footer-bottom { padding-bottom: calc(112px + 3 * var(--space-4)); }
+}
+
+/* ============ WhatsApp Floating Button ============ */
+.whatsapp-btn {
+  position: fixed;
+  right: max(var(--space-4), env(safe-area-inset-right));
+  bottom: calc(max(var(--space-4), env(safe-area-inset-bottom)) + 56px + var(--space-3));
+  z-index: var(--z-chat);
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: var(--color-whatsapp);
+  color: var(--white);
+  box-shadow: 0 0 0 3px var(--white), 0 10px 28px rgba(37, 211, 102, 0.4);
+  transition: background-color var(--dur-fast) var(--ease-out), transform var(--dur-fast) var(--ease-out), opacity var(--dur-fast) var(--ease-out);
+  text-decoration: none;
+}
+.whatsapp-btn:hover {
+  background: var(--color-whatsapp-hover);
+  transform: scale(1.05);
+}
+.whatsapp-btn:active {
+  transform: scale(0.95);
+}
+.whatsapp-btn svg {
+  width: 32px;
+  height: 32px;
+  fill: currentColor;
+}
+body.chat-open .whatsapp-btn {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.8);
 }
 
 /* ============ Chat widget (built by app.js) ============ */

@@ -333,14 +333,11 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
         return implode("\n", $lines);
     };
 
-    // Chat endpoint fallback
+    // Chat endpoint - Powered by Claude AI
     if ($cleanPath === 'api/chat') {
-        echo json_encode([
-            'reply' => "Thank you for reaching out! Please use our Order Now buttons to select products or WhatsApp our team directly at 0323 0955496 for personalized skincare advice.",
-            'sessionId' => $sessionId,
-            'order' => $order,
-            'summary' => $summarize($order)
-        ]);
+        require_once __DIR__ . '/backend/claudeChat.php';
+        $chatResult = handleClaudeChat($input, $sessionId, $order, $sessionFile, $env, $menu);
+        echo json_encode($chatResult);
         exit;
     }
 

@@ -360,8 +360,19 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
 
     // Receipt submission endpoint
     if ($cleanPath === 'api/order/receipt') {
-        $orderId = 'ORD-' . strtoupper(bin2hex(random_bytes(3)));
+        $orderId = 'T2-' . date('Ymd') . '-' . strtoupper(bin2hex(random_bytes(3)));
+        $receiptFile = null;
+        if (!empty($input['image']['data'])) {
+            $receiptDir = __DIR__ . '/data/receipts';
+            if (!is_dir($receiptDir)) @mkdir($receiptDir, 0755, true);
+            $receiptFile = $orderId . '.jpg';
+            $decoded = base64_decode($input['image']['data']);
+            if ($decoded) file_put_contents($receiptDir . '/' . $receiptFile, $decoded);
+        }
+
         $order['orderId'] = $orderId;
+        $order['receiptFile'] = $receiptFile;
+        $order['source'] = 'website';
         $order['submittedAt'] = date('c');
         $recalc($order);
         file_put_contents($sessionFile, json_encode($order, JSON_PRETTY_PRINT));
@@ -372,13 +383,18 @@ if (str_starts_with($cleanPath, 'api/') || str_starts_with($cleanPath, 'owner/ap
         $allOrders[] = $order;
         file_put_contents($ordersJsonPath, json_encode($allOrders, JSON_PRETTY_PRINT));
 
+        // Send order notification emails to owner and customer
+        require_once __DIR__ . '/backend/claudeChat.php';
+        sendOrderEmailsPhp($order, $env);
+        $hasConfirmationEmail = !empty($env['SMTP_USER']) && !empty($env['SMTP_PASS']) && !empty($order['customer']['email']);
+
         echo json_encode([
             'ok' => true,
             'orderId' => $orderId,
             'sessionId' => $sessionId,
             'order' => $order,
             'summary' => $summarize($order),
-            'confirmationEmail' => false
+            'confirmationEmail' => $hasConfirmationEmail
         ]);
         exit;
     }

@@ -399,18 +399,21 @@ function sendOrderEmailsPhp($order, $env) {
         $itemsList[] = "  - {$i['quantity']} x {$i['name']}: {$order['currency']} " . number_format($i['lineTotal']);
     }
     $itemsText = implode("\r\n", $itemsList);
+    $source = (!empty($order['source']) && $order['source'] === 'website') ? 'the website checkout' : 'the chat assistant';
 
     // 1. Send owner notification
     $send("MAIL FROM:<$smtpUser>");
     $send("RCPT TO:<$ownerEmail>");
     $send("DATA");
-    $ownerBody = "New order {$order['orderId']}\r\nPlaced on " . date('r') . " via chat.\r\n\r\n"
+    $receiptNote = !empty($order['receiptFile']) ? "Receipt image saved: {$order['receiptFile']}" : "No receipt uploaded yet";
+    $ownerBody = "New order {$order['orderId']}\r\nPlaced on " . date('r') . " via {$source}.\r\n\r\n"
                . "Customer:\r\n"
                . "  Name: " . ($order['customer']['name'] ?? 'N/A') . "\r\n"
                . "  WhatsApp: " . ($order['customer']['whatsapp'] ?? 'N/A') . "\r\n"
                . "  Address: " . ($order['customer']['address'] ?? '') . ", " . ($order['customer']['city'] ?? '') . "\r\n\r\n"
                . "Items:\r\n{$itemsText}\r\n"
                . "Total: {$order['currency']} " . number_format($order['total']) . "\r\n\r\n"
+               . "{$receiptNote}\r\n"
                . "Check payment in bank and mark complete in owner dashboard.";
     $send("From: $from\r\nTo: $ownerEmail\r\nSubject: New T2&Co Order {$order['orderId']}\r\n\r\n" . $ownerBody . "\r\n.");
 
